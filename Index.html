@@ -1329,10 +1329,13 @@ header.app-header h1 {
   `;
 
   let lastInput = null;
+  let lastInputSignature = null;
   let version = 0;
   let busy = false;
   let saved = false;
   let saveBusy = false;
+  let previewWatchdog = null;
+  let saveWatchdog = null;
 
   saveButton.disabled = true;
   saveButton.hidden = true;
@@ -1950,23 +1953,43 @@ header.app-header h1 {
       .slice(0, 4);
   });
 
-  /* INVALIDATE OLD RESULTS */
+  /* INVALIDATE OLD RESULTS AND RELEASE STALE REQUESTS */
+
+  function clearRequestWatchdogs() {
+    window.clearTimeout(previewWatchdog);
+    window.clearTimeout(saveWatchdog);
+    previewWatchdog = null;
+    saveWatchdog = null;
+  }
+
+  function unlockCalculate() {
+    busy = false;
+    calculateButton.disabled = false;
+    calculateButton.textContent = 'Calculate Assessment';
+  }
 
   function invalidate() {
+    const requestWasRunning = busy || saveBusy;
     version++;
-
+    clearRequestWatchdogs();
+    // The old server call may still finish, but it no longer owns the UI.
+    // A new calculation must never inherit its disabled Calculate button.
+    unlockCalculate();
+    saveBusy = false;
     lastInput = null;
+    lastInputSignature = null;
     saved = false;
 
     result.style.display = 'none';
     saveButton.disabled = true;
     saveButton.hidden = true;
-
     saveState.textContent = '';
     saveState.classList.remove('unsaved', 'pending');
     resultLoading.hidden = true;
     output.hidden = true;
-    message.textContent = '';
+    message.textContent = requestWasRunning
+      ? 'Values changed. The previous assessment is no longer current; an earlier save may still finish. Calculate again using the updated values.'
+      : '';
   }
 
   form.addEventListener('input', invalidate);
@@ -2201,6 +2224,7 @@ header.app-header h1 {
   }
 
   function reportError(detail) {
+    result.style.display = 'block';
     resultLoading.hidden = true;
     output.hidden = false;
     output.replaceChildren(element('div', 'report-no-dose', detail));
@@ -2226,6 +2250,7 @@ header.app-header h1 {
   }
 
   function markSaveFailed(err) {
+    if (saved) return; // A later error must not erase a confirmed successful retry.
     saved = false;
     saveState.classList.remove('pending');
     saveState.classList.add('unsaved');
@@ -2236,7 +2261,19 @@ header.app-header h1 {
     message.textContent = 'Assessment not saved; review the error and retry.';
   }
 
-  /* CALCULATE — SHOW REPORT FIRST, SAVE IN PARALLEL */
+  /* CALCULATE — SHOW READ-ONLY REPORT, THEN CONFIRM SAVE */
+
+  function markSaveUnconfirmed() {
+    if (saved) return;
+    saveState.classList.remove('pending');
+    saveState.classList.add('unsaved');
+    saveState.textContent =
+      'SAVE NOT CONFIRMED · Google Apps Script is taking longer than expected. ' +
+      'The previous request may still save. Use Retry save with the same ' +
+      'assessment ID and verify AssessmentHistory before relying on this record.';
+    saveButton.hidden = false;
+    saveButton.disabled = false;
+  }
 
   form.addEventListener('submit', e => {
     e.preventDefault();
@@ -2247,13 +2284,21 @@ header.app-header h1 {
     }
 
     const input = Object.fromEntries(new FormData(form).entries());
-    input._entryId = (window.crypto && typeof window.crypto.randomUUID === 'function')
-      ? window.crypto.randomUUID()
-      : (Date.now().toString(36) + '_' +
-         Math.random().toString(36).slice(2) + '_' +
-         Math.random().toString(36).slice(2));
+    const signature = JSON.stringify(input);
+    // Re-running identical input after a timeout reuses the same request ID.
+    // This avoids duplicate history rows if the first save completes late.
+    input._entryId = lastInput && !saved &&
+      lastInputSignature === signature ? lastInput._entryId :
+      ((window.crypto && typeof window.crypto.randomUUID === 'function')
+        ? window.crypto.randomUUID()
+        : (Date.now().toString(36) + '_' +
+          Math.random().toString(36).slice(2) + '_' +
+          Math.random().toString(36).slice(2)));
+
     lastInput = input;
-    const seq = version;
+    lastInputSignature = signature;
+    clearRequestWatchdogs();
+    const seq = ++version; // A second click never accepts an older response.
     busy = true;
     calculateButton.disabled = true;
     calculateButton.textContent = 'Preparing assessment…';
@@ -2269,48 +2314,88 @@ header.app-header h1 {
     markSavePending();
     message.textContent = 'Assessment requested.';
 
-    // Scroll straight to the new report — otherwise it is below the long Clinical form.
-    requestAnimationFrame(() => {
-      if (seq === version) result.scrollIntoView({behavior: 'smooth', block: 'start'});
+    window.requestAnimationFrame(() => {
+      if (seq === version) {
+        result.scrollIntoView({behavior: 'smooth', block: 'start'});
+      }
     });
 
     let previewFinished = false;
     let previewReady = false;
     let saveFinished = false;
 
-    // Quick read-only preview: this call never writes patient records.
+    function renderSafely(assessment) {
+      try {
+        return showReport(assessment, seq, input);
+      } catch (err) {
+        console.error('PHO assessment display error:', err);
+        reportError('Could not display the assessment. Check the data and try again.');
+        return false;
+      }
+    }
+
+    // A lost preview call must never leave a spinner showing indefinitely.
+    previewWatchdog = window.setTimeout(() => {
+      if (seq !== version || previewFinished || previewReady) return;
+      resultLoading.hidden = true;
+      output.hidden = false;
+      output.replaceChildren(element('div', 'report-no-dose',
+        'The assessment preview has not responded yet. Waiting for the ' +
+        'save request; check your connection if this continues.'));
+      message.textContent = 'Server response delayed. This is not a confirmed assessment.';
+    }, 20000);
+
+    // A slow or disconnected save is UNKNOWN, not automatically a failure.
+    // Retry reuses the same _entryId to avoid duplicate history entries.
+    saveWatchdog = window.setTimeout(() => {
+      if (seq !== version || saveFinished) return;
+      unlockCalculate();
+      markSaveUnconfirmed();
+      if (!previewReady) {
+        resultLoading.hidden = true;
+        output.hidden = false;
+        output.replaceChildren(element('div', 'report-no-dose',
+          'No assessment response yet. Please check your connection and retry.'));
+      }
+      message.textContent = 'Save status unknown. Verify the history sheet or use Retry save.';
+    }, 45000);
+
     google.script.run
       .withSuccessHandler(r => {
         previewFinished = true;
-        if (seq !== version || (saveFinished && previewReady)) return;
-        previewReady = showReport(r, seq, input);
+        if (seq !== version) return;
+        window.clearTimeout(previewWatchdog);
+        previewReady = renderSafely(r);
         if (!saveFinished && previewReady) {
-          message.textContent = 'Assessment shown; automatic save in progress.';
+          message.textContent = 'Assessment displayed; automatic save still in progress.';
         }
       })
       .withFailureHandler(err => {
         previewFinished = true;
-        if (seq !== version || previewReady) return;
-        if (saveFinished) {
-          reportError('Assessment unavailable: ' + ((err && err.message) || String(err)));
-        } else {
-          loadingText.textContent = 'Finishing the assessment…';
+        if (seq !== version) return;
+        window.clearTimeout(previewWatchdog);
+        if (!previewReady && !saveFinished) {
+          resultLoading.hidden = true;
+          output.hidden = false;
+          output.replaceChildren(element('div', 'report-no-dose',
+            'Preview unavailable. Waiting for the save result…'));
+        } else if (!previewReady) {
+          reportError('Assessment preview unavailable: ' +
+            ((err && err.message) || String(err)));
         }
       })
       .assessCase(input);
 
-    // Always save the complete assessment once per Calculate click.
-    // This retains the existing backend's append-only history and retry ID.
+    // The original backend remains the only authority for saving records.
+    // It preserves append-only history and the request-ID retry mechanism.
     google.script.run
       .withSuccessHandler(payload => {
         saveFinished = true;
-        busy = false;
-        calculateButton.disabled = false;
-        calculateButton.textContent = 'Calculate Assessment';
         if (seq !== version) return;
-        if (!payload || !showReport(payload.assessment, seq, input)) {
-          // A malformed response must not appear as a confirmed save.
-          markSaveFailed(new Error('Server response was incomplete'));
+        window.clearTimeout(saveWatchdog);
+        unlockCalculate();
+        if (!payload || !renderSafely(payload.assessment)) {
+          markSaveFailed(new Error('Assessment response was incomplete'));
           return;
         }
         previewReady = true;
@@ -2323,13 +2408,12 @@ header.app-header h1 {
       })
       .withFailureHandler(err => {
         saveFinished = true;
-        busy = false;
-        calculateButton.disabled = false;
-        calculateButton.textContent = 'Calculate Assessment';
         if (seq !== version) return;
+        window.clearTimeout(saveWatchdog);
+        unlockCalculate();
         markSaveFailed(err);
         if (previewFinished && !previewReady) {
-          reportError('Assessment unavailable. Check your entries and the error above.');
+          reportError('Assessment unavailable. Check the entered values or the error above.');
         }
       })
       .assessAndSave(input);
@@ -2389,7 +2473,7 @@ header.app-header h1 {
       .withFailureHandler(err => {
         saveBusy = false;
 
-        if (seq !== version) return;
+        if (seq !== version || saved) return;
 
         saveButton.disabled = false;
         saveButton.hidden = false;
