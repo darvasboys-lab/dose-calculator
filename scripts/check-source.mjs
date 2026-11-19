@@ -31,7 +31,7 @@ for (const label of ['Patient', 'CBC', 'LFT Panel', 'Clinical']) {
   requireIncludes(html, 'calculator tab', "'" + label + "'");
 }
 for (const id of ['tabs', 'result', 'output', 'stopBox', 'stopReasons',
-  'saveState', 'calculate']) {
+  'saveState', 'save', 'calculate']) {
   requireIncludes(html, 'element ID', 'id="' + id + '"');
 }
 for (const fn of ['function doGet(', 'function assessCase(', 'function assessAndSave(',
@@ -39,12 +39,13 @@ for (const fn of ['function doGet(', 'function assessCase(', 'function assessAnd
   requireIncludes(code, 'backend function', fn);
 }
 requireIncludes(code, 'mobile viewport metadata', ".addMetaTag('viewport'");
-requireIncludes(script, 'public calculation call', '.assessCase(input)');
-assert.ok(!script.includes('.assessAndSave(input)'), 'Anonymous UI must never attempt spreadsheet writes');
-assert.ok(!script.includes('.saveAssessment(input)'), 'Anonymous UI must not show save retry');
-requireIncludes(code, 'server-side public read-only mode', 'publicReadOnly: true');
-requireIncludes(code, 'server-side write protection', 'if (CFG.publicReadOnly)');
-requireIncludes(html, 'plain disclosure that records are not saved', 'Entries are not saved');
+requireIncludes(script, 'calculate and save', '.assessAndSave(input)');
+requireIncludes(script, 'retry failed saving', '.saveAssessment(input)');
+requireIncludes(code, 'backend Sheets history writer', 'persistAssessment_(d, assessment)');
+requireIncludes(code, 'no visitor identity attribution', 'Anonymous web submission');
+requireIncludes(html, 'simple saved confirmation', 'Saved automatically');
+requireIncludes(html, 'retry save button', 'Retry save');
+assert.ok(!code.includes('publicReadOnly: true'), 'Saving must not be blocked in this prototype');
 requireIncludes(script, 'hard-stop handling', 'stopBox.hidden = !r.hardStop');
 requireIncludes(html, 'small final-page signature', 'Developed by Dr Aman Singh');
 
@@ -55,7 +56,7 @@ requireIncludes(html, 'welcome action button', 'id="welcomeStart"');
 requireIncludes(html, 'welcome source-build label', 'Build 2026.11.20');
 requireIncludes(script, 'automatic welcome dismissal', 'window.setTimeout(closeWelcome, 4000)');
 requireIncludes(script, 'manual welcome dismissal', "welcomeStart.addEventListener('click', closeWelcome)");
-requireIncludes(html, 'welcome explains no storage', 'records are not saved');
+requireIncludes(html, 'welcome explains Sheet saving', 'Assessments save to the linked Sheet.');
 
 requireIncludes(code, 'Google Sheets menu title', "createMenu('PHO ALL Calculator')");
 requireIncludes(html, 'BSA arithmetic details', 'BSA-derived reference arithmetic');
@@ -104,13 +105,13 @@ const hardStop = assess({...fixture, anc: 400});
 assert.equal(hardStop.hardStop, true);
 assert.equal(hardStop.candidate, null);
 
-// Anonymous guests cannot use the older writable endpoints.
-assert.throws(() => runInNewContext(code + '\nassessAndSave({});', {}, {timeout:3000}),
-  /Public calculator: saving is disabled/);
-assert.throws(() => runInNewContext(code + '\nsaveAssessment({});', {}, {timeout:3000}),
-  /Public calculator: saving is disabled/);
-
+// A database outage must still return the calculated assessment and a failure message.
+const failedSave = runInNewContext(code + '\nassessAndSave(' +
+  JSON.stringify(fixture) + ');', {}, {timeout:3000});
+assert.equal(failedSave.saved, false);
+assert.equal(failedSave.assessment.candidate.mpDaily, 35);
+assert.ok(failedSave.saveError, 'No error message when Sheets saving is unavailable');
 
 console.log('PHO source checks passed: valid JS, clean document start, 4 tabs,');
-console.log('mobile metadata, hard-stop interface and public read-only assessment.');
+console.log('mobile metadata, hard-stop interface and simple Sheet saving.');
 console.log('Synthetic arithmetic checks: unchanged, +10%, -10%, hard stop, and BSA references passed.');
