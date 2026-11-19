@@ -1081,6 +1081,52 @@ input[type=range]:focus-visible {
   font-weight: 600;
 }
 
+/* General explanatory cautions appear briefly, then collapse into Safety notes.
+   Hard-stop alerts, CBC warnings, and unsaved warnings are never auto-hidden. */
+#output .report-disclaimer {
+  max-height: 250px;
+  overflow: hidden;
+  transition: opacity .3s ease, max-height .3s ease, padding .3s ease,
+    margin .3s ease, visibility .3s ease;
+}
+#output.report-notices-dismissed .report-disclaimer {
+  opacity: 0;
+  visibility: hidden;
+  max-height: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-width: 0;
+  pointer-events: none;
+}
+.report-safety-details {
+  display: none;
+  padding: 0 1px;
+  color: #82909d;
+  font-size: 11px;
+  line-height: 1.5;
+}
+#output.report-notices-dismissed .report-safety-details { display: block; }
+.report-safety-details summary {
+  display: inline-block;
+  padding: 3px 0;
+  cursor: pointer;
+  font-size: 11px;
+  color: #6a7e8e;
+  text-decoration: underline;
+  text-decoration-color: #c4d0d9;
+  text-underline-offset: 3px;
+}
+.report-safety-details summary:focus-visible {
+  outline: 2px solid #2274ae;
+  outline-offset: 3px;
+}
+.report-safety-details p { margin: 8px 0 0; }
+@media (prefers-reduced-motion: reduce) {
+  #output .report-disclaimer { transition: none; }
+}
+
 /* Save confirmation is distinct from clinical status */
 #result .save-state {
   margin-top: 15px;
@@ -1336,6 +1382,9 @@ header.app-header h1 {
   let saveBusy = false;
   let previewWatchdog = null;
   let saveWatchdog = null;
+  let disclaimerTimer = null;
+  let disclaimerFirstShownAt = null;
+  let disclaimerShownForVersion = null;
 
   saveButton.disabled = true;
   saveButton.hidden = true;
@@ -1962,6 +2011,30 @@ header.app-header h1 {
     saveWatchdog = null;
   }
 
+  function resetTransientNotices() {
+    window.clearTimeout(disclaimerTimer);
+    disclaimerTimer = null;
+    disclaimerFirstShownAt = null;
+    disclaimerShownForVersion = null;
+    output.classList.remove('report-notices-dismissed');
+  }
+
+  function scheduleTransientNotices(seq) {
+    if (seq !== version) return;
+    if (disclaimerShownForVersion !== seq || disclaimerFirstShownAt === null) {
+      disclaimerShownForVersion = seq;
+      disclaimerFirstShownAt = Date.now();
+      output.classList.remove('report-notices-dismissed');
+    }
+    window.clearTimeout(disclaimerTimer);
+    const timeRemaining = Math.max(0, 3000 - (Date.now() - disclaimerFirstShownAt));
+    disclaimerTimer = window.setTimeout(() => {
+      if (seq === version) {
+        output.classList.add('report-notices-dismissed');
+      }
+    }, timeRemaining);
+  }
+
   function unlockCalculate() {
     busy = false;
     calculateButton.disabled = false;
@@ -1972,6 +2045,7 @@ header.app-header h1 {
     const requestWasRunning = busy || saveBusy;
     version++;
     clearRequestWatchdogs();
+    resetTransientNotices();
     // The old server call may still finish, but it no longer owns the UI.
     // A new calculation must never inherit its disabled Calculate button.
     unlockCalculate();
@@ -2175,7 +2249,7 @@ header.app-header h1 {
       comparison.appendChild(element('h3', 'report-section-heading',
         'Illustrative dose comparison'));
       comparison.appendChild(element('p', 'report-section-subtitle',
-        'Current entered doses versus calculated candidates · clinician review required'));
+        'Entered dose compared with the calculated candidate'));
 
       const ruleNote = percent === 0
         ? 'No change generated: the entered doses and calculated candidates are equal because the CBC rule applied 0%.'
@@ -2224,6 +2298,16 @@ header.app-header h1 {
 
     output.appendChild(element('p', 'report-disclaimer',
       'Clinical decision-support prototype only. Not validated for prescribing. The treating team must verify clinical decisions independently.'));
+
+    // The repeated general cautions fade after three seconds, but remain
+    // recoverable from a compact disclosure. Critical alerts stay visible.
+    const safety = element('details', 'report-safety-details');
+    safety.appendChild(element('summary', '', 'Safety notes'));
+    safety.appendChild(element('p', '',
+      'Prototype only: calculations are not validated prescriptions. BSA references are ' +
+      'separate from dose candidates. Treatment decisions require clinician review.'));
+    output.appendChild(safety);
+    scheduleTransientNotices(seq);
 
     warningsBox.replaceChildren();
     (r.warnings || []).forEach(w => {
@@ -2307,6 +2391,7 @@ header.app-header h1 {
     lastInput = input;
     lastInputSignature = signature;
     clearRequestWatchdogs();
+    resetTransientNotices();
     const seq = ++version; // A second click never accepts an older response.
     busy = true;
     calculateButton.disabled = true;
