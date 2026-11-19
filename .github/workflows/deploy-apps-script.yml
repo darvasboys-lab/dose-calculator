@@ -1,4 +1,4 @@
-name: Deploy PGICH calculator to Apps Script
+name: Deploy PHO ALL Calculator to Apps Script
 
 on:
   push:
