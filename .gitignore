@@ -1,4 +1,6 @@
 # Credentials and local Apps Script linkage
+# The deployment workflow clones the live manifest, not this repository.
+appsscript.json
 .clasprc.json
 .clasp.json
 .env
