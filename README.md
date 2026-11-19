@@ -1,4 +1,4 @@
-# PGICH ALL Maintenance Calculator
+# PHO ALL Calculator
 
 **Unvalidated, synthetic-data-only prototype. Not an authorised chemotherapy prescribing tool.**
 
@@ -23,7 +23,7 @@ Four-tab Google Apps Script / Google Sheets calculator for 6-mercaptopurine (6-M
 3. Run `setupWorkbook()` once to create/check `AssessmentHistory` and `LatestByCR`. This function does **not** delete or clear `DemoCases`.
 4. In **Project Settings → Script Properties**, configure `PGICH_ALLOWED_EMAILS` as comma-separated approved Google account email addresses. `setupWorkbook()` initializes the property to the setup account if missing. Saving/migration requires a nonblank active user's email in that list.
 5. Restrict Sheet sharing and any web-app access to authorised institutional accounts. If `Session.getActiveUser().getEmail()` is blank under a deployment mode, **saving is intentionally denied** rather than falling back to the script owner's identity. Do not enable anonymous access or deploy publicly for patient information.
-6. Run `runSelfTests()` using **fictional inputs**; reopen the sidebar through **PGICH ALL → Open calculator**. If deploying as a web app, publish a **new deployment version** after code changes.
+6. Run `runSelfTests()` using **fictional inputs**; reopen the sidebar through **PHO ALL Calculator → Open calculator**. If deploying as a web app, publish a **new deployment version** after code changes.
 7. Test a fictional CR such as `0042`: calculate; check for an explicit “Saved automatically” notice, then verify the corresponding rows in both record tabs. Repeat with a synthetic toxicity flag and check that doses are suppressed and reasons saved.
 
 
