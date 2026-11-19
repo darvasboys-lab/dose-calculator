@@ -49,6 +49,14 @@ requireIncludes(script, 'hard-stop handling', 'stopBox.hidden = !r.hardStop');
 requireIncludes(html, 'small final-page signature', 'Developed by Dr Aman Singh');
 
 requireIncludes(html, 'new app title', '<h1>PHO ALL Calculator</h1>');
+requireIncludes(html, 'welcome banner', 'id="welcomeBanner"');
+requireIncludes(html, 'banner starts without blocking broken JS', 'class="welcome-overlay" hidden');
+requireIncludes(html, 'welcome action button', 'id="welcomeStart"');
+requireIncludes(html, 'welcome source-build label', 'Build 2026.11.20');
+requireIncludes(script, 'automatic welcome dismissal', 'window.setTimeout(closeWelcome, 4000)');
+requireIncludes(script, 'manual welcome dismissal', "welcomeStart.addEventListener('click', closeWelcome)");
+requireIncludes(html, 'welcome explains no storage', 'records are not saved');
+
 requireIncludes(code, 'Google Sheets menu title', "createMenu('PHO ALL Calculator')");
 requireIncludes(html, 'BSA arithmetic details', 'BSA-derived reference arithmetic');
 requireIncludes(html, '0%-adjustment explanation', 'the CBC rule applied 0%');
