@@ -1995,6 +1995,15 @@ header.app-header h1 {
   form.addEventListener('input', invalidate);
   form.addEventListener('change', invalidate);
 
+  // Browser back/forward cache can restore a suspended Google Apps Script call.
+  // Clear its stale loading state instead of displaying an endless spinner.
+  window.addEventListener('pageshow', e => {
+    if (e.persisted && busy) {
+      invalidate();
+      message.textContent = 'Page restored. An earlier save may still complete; recalculate with the current values.';
+    }
+  });
+
   /* FORM VALIDATION */
 
   function validate() {
