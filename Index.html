@@ -443,8 +443,56 @@ input[type=range]:focus-visible {
 }
 
 /* Balanced at standard phone and narrow Apps Script sidebar widths */
+
+/* Phone web-app: occupy the complete available screen width.
+   Browser address/status bars are controlled by the browser, not this CSS. */
+@media (max-width: 767px) {
+  html, body {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    overflow-x: clip;
+  }
+  body {
+    background: #f5f7fa;
+  }
+  main {
+    width: 100%;
+    max-width: none;
+    min-height: 100vh;
+    min-height: 100svh;
+    margin: 0;
+    padding:
+      max(10px, env(safe-area-inset-top))
+      max(10px, env(safe-area-inset-right))
+      max(22px, env(safe-area-inset-bottom))
+      max(10px, env(safe-area-inset-left));
+  }
+  header,
+  .tabs,
+  form,
+  form > section,
+  #result {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+  header {
+    padding: 14px 6px 18px;
+  }
+  section {
+    border-radius: 18px;
+  }
+  .stack, .field, .rangeLine {
+    min-width: 0;
+  }
+  .tabs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 430px) {
-  main { padding: 12px 9px max(22px, env(safe-area-inset-bottom)); }
+  main { padding: max(10px, env(safe-area-inset-top)) max(7px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(7px, env(safe-area-inset-left)); }
   header { padding: 12px 7px 15px; }
   h1 { font-size: 20px; }
   section { padding: 20px 16px 18px; border-radius: 19px; }
