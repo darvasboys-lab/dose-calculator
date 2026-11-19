@@ -1,0 +1,129 @@
+name: Deploy PGICH calculator to Apps Script
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Code.gs
+      - Index.html
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pgich-apps-script-production
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check HTML, JavaScript and safety entry points
+        run: node scripts/check-source.mjs
+
+  deploy:
+    name: Push source and update existing web app
+    needs: validate
+    runs-on: ubuntu-latest
+
+    # Configure this GitHub environment BEFORE adding the OAuth secret.
+    # Settings > Environments > production > Required reviewers.
+    environment:
+      name: production
+      url: https://script.google.com/macros/s/AKfycbyVkV2rKnb9dcCk9VdNXgjsQnXN653SaTI8RDZ5kcBpbbV2zHMhecNmQVvg4piRBLnC/exec
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check authorised deployment configuration
+        shell: bash
+        env:
+          APPS_SCRIPT_ID: ${{ vars.APPS_SCRIPT_ID }}
+          WEB_APP_DEPLOYMENT_ID: ${{ vars.WEB_APP_DEPLOYMENT_ID }}
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$APPS_SCRIPT_ID" || -z "$WEB_APP_DEPLOYMENT_ID" || -z "$CLASPRC_JSON" ]]; then
+            echo "::error::Configure production environment variables APPS_SCRIPT_ID and WEB_APP_DEPLOYMENT_ID, and the CLASPRC_JSON environment secret. See DEPLOYMENT_SETUP.md"
+            exit 1
+          fi
+          if [[ ! "$APPS_SCRIPT_ID" =~ ^[A-Za-z0-9_-]{25,}$ ]] ||
+             [[ ! "$WEB_APP_DEPLOYMENT_ID" =~ ^AKfy[A-Za-z0-9_-]+$ ]]; then
+            echo "::error::Check Script ID and Web App Deployment ID. They are different identifiers."
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          node -e "JSON.parse(require('node:fs').readFileSync(process.env.HOME+'/.clasprc.json','utf8'))"
+          echo "Google credentials configured in temporary runner; not committed."
+
+      - name: Install pinned clasp CLI
+        run: npm install --global @google/clasp@3.4.1
+
+      - name: Clone the existing Apps Script project and verify deployment
+        shell: bash
+        env:
+          APPS_SCRIPT_ID: ${{ vars.APPS_SCRIPT_ID }}
+          WEB_APP_DEPLOYMENT_ID: ${{ vars.WEB_APP_DEPLOYMENT_ID }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/pgich-target"
+          cd "$RUNNER_TEMP/pgich-target"
+          clasp clone-script "$APPS_SCRIPT_ID"
+
+          # Avoid replacing the project's manifest or unrelated source.
+          test -f appsscript.json || {
+            echo "::error::Existing Apps Script manifest not found. Nothing uploaded."
+            exit 1
+          }
+          test -f Index.html || {
+            echo "::error::Existing Index.html not found. Nothing uploaded."
+            exit 1
+          }
+          if [[ -f Code.gs && -f Code.js ]]; then
+            echo "::error::Both Code.gs and Code.js exist; ambiguous project files."
+            exit 1
+          fi
+          if [[ ! -f Code.gs && ! -f Code.js ]]; then
+            echo "::error::Existing Code.gs/Code.js not found. Nothing uploaded."
+            exit 1
+          fi
+
+          deployments="$(clasp list-deployments)"
+          if ! grep -Fq -- "$WEB_APP_DEPLOYMENT_ID" <<< "$deployments"; then
+            echo "::error::Deployment ID does not belong to this Script ID, or is not accessible. Nothing uploaded."
+            exit 1
+          fi
+
+          if [[ -f Code.gs ]]; then
+            cp "$GITHUB_WORKSPACE/Code.gs" Code.gs
+          else
+            cp "$GITHUB_WORKSPACE/Code.gs" Code.js
+          fi
+          cp "$GITHUB_WORKSPACE/Index.html" Index.html
+
+          # Keep pulled appsscript.json, all other scripts and script properties.
+          echo "Source files staged; all other cloned project files preserved."
+          clasp show-file-status
+
+      - name: Upload source and redeploy the SAME web-app URL
+        shell: bash
+        env:
+          WEB_APP_DEPLOYMENT_ID: ${{ vars.WEB_APP_DEPLOYMENT_ID }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/pgich-target"
+          clasp push --force
+          clasp create-deployment \
+            --deploymentId "$WEB_APP_DEPLOYMENT_ID" \
+            --description "GitHub ${GITHUB_SHA:0:12}"
+          echo "Existing deployment updated. Check the live web app with synthetic data."
