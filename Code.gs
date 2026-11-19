@@ -6,7 +6,8 @@
  * thresholds, access control, privacy, retention and deployment.
  */
 const CFG = Object.freeze({
-  publicReadOnly: true,          // Anonymous users: calculations only; never write patient records
+  // Public web app writes using the script owner's deployment permissions.
+  // Do not use for real patient data: anonymous visitors are not authenticated.
   sheetIdProperty: 'PGICH_SHEET_ID',
   allowlistProperty: 'PGICH_ALLOWED_EMAILS',
   latestName: 'LatestByCR',
@@ -283,7 +284,9 @@ function persistAssessment_(d, assessment) {
   if (!/^\d{4}$/.test(cr)) {
     throw new Error('CR must contain exactly four digits, e.g. 0042.');
   }
-  const email = requireAuthorisedUser_();
+  // The public web app does not know the visitor's email. Never attribute a
+  // row to the script owner, which would falsely identify the submitter.
+  const email = 'Anonymous web submission';
   const requestId = entryId_(d);
   const inputJSON = JSON.stringify(d);
   const lock = LockService.getScriptLock();
@@ -362,24 +365,24 @@ function persistAssessment_(d, assessment) {
 
 /** Single call used by Calculate: assessment + auto-save, including toxicity. */
 function assessAndSave(d) {
-  // Server-side enforcement; hiding a button alone is not secure.
-  if (CFG.publicReadOnly) {
-    throw new Error('Public calculator: saving is disabled. No patient records were written.');
+  const assessment = assessCase(d);
+  // Always return the calculation, even if Sheets saving cannot complete.
+  try {
+    const info = persistAssessment_(d, assessment);
+    return {assessment: assessment, saved: true, cr: info.cr,
+      savedAt: info.savedAt};
+  } catch (err) {
+    return {assessment: assessment, saved: false,
+      saveError: (err && err.message) ? err.message : String(err)};
   }
-  const r = assessCase(d);
-  const info = persistAssessment_(d, r);
-  return {assessment: r, saved: true, cr: info.cr, savedAt: info.savedAt};
 }
 
-/** Manual retry for a failed auto-save. */
+/** Retry failed/uncertain saves using the same assessment request ID. */
 function saveAssessment(d) {
-  if (CFG.publicReadOnly) {
-    throw new Error('Public calculator: saving is disabled. No patient records were written.');
-  }
-  const r = assessCase(d);
-  const info = persistAssessment_(d, r);
+  const assessment = assessCase(d);
+  const info = persistAssessment_(d, assessment);
   return 'Saved to AssessmentHistory for CR ' + info.cr +
-    (r.hardStop ? ' (hard stop flagged).' : '.');
+    (assessment.hardStop ? ' (hard stop flagged).' : '.');
 }
 
 /* Legacy records remain in DemoCases; migration only copies them. */
