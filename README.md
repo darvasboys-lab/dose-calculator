@@ -2,6 +2,10 @@
 
 **Unvalidated demonstration only. Not an authorised chemotherapy prescribing or patient-record system.**
 
+## Welcome banner
+
+The app displays a brief welcome panel whenever it first opens. It shows **PHO ALL Calculator**, the source-build label **2026.11.20**, and a **Start assessment** button. It closes automatically after four seconds or immediately on button click. The build label is not the numeric Apps Script deployment version shown by `clasp list-deployments`.
+
 ## Public, no-login calculator
 
 The current web-app source is designed for **read-only public demonstrations**. Visitors can open the link without signing in (after the owner changes the Apps Script deployment settings), complete the four tabs and view the synthetic assessment report.
