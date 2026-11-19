@@ -1081,6 +1081,15 @@ input[type=range]:focus-visible {
   font-weight: 600;
 }
 
+/* Clean public demonstration banner before entering data. */
+.public-mode-intro {
+  margin: -8px 6px 14px;
+  color: #748693;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.4;
+}
 /* Public mode: clear, quiet disclosure; no record-saving controls. */
 #result .public-access-note {
   display: flex;
@@ -1304,6 +1313,9 @@ header.app-header h1 {
 <header class="app-header">
   <h1>PHO ALL Calculator</h1>
 </header>
+<p class="public-mode-intro" role="note">
+  Open access · No sign-in · Fictional cases only · No records saved
+</p>
 
 <nav id="tabs" class="tabs"
   aria-label="Calculator tabs">
