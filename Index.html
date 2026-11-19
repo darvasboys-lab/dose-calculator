@@ -1081,6 +1081,25 @@ input[type=range]:focus-visible {
   font-weight: 600;
 }
 
+/* Public mode: clear, quiet disclosure; no record-saving controls. */
+#result .public-access-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid #e0e9ec;
+  border-radius: 11px;
+  background: #f6fafb;
+  color: #476978;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+#result .public-access-note span {
+  font-size: 18px;
+  color: #488398;
+}
 /* General explanatory cautions appear briefly, then collapse into Safety notes.
    Hard-stop alerts, CBC warnings, and unsaved warnings are never auto-hidden. */
 #output .report-disclaimer {
@@ -1324,22 +1343,13 @@ header.app-header h1 {
 
   <div id="output" class="summary" hidden></div>
 
-  <div id="saveState"
-    class="save-state"
-    role="status"
-    aria-live="polite">
+  <div id="saveState" class="public-access-note" role="note">
+    <span aria-hidden="true">◌</span> No login required · Calculations only · Entries are not saved
   </div>
 
   <ul id="warnings"></ul>
 
   <div class="actions">
-    <button id="save"
-      class="action secondary"
-      type="button"
-      hidden disabled>
-      Retry save
-    </button>
-
     <button id="print"
       class="action secondary"
       type="button">
@@ -1360,7 +1370,6 @@ header.app-header h1 {
   const result = document.getElementById('result');
   const message = document.getElementById('message');
   const output = document.getElementById('output');
-  const saveButton = document.getElementById('save');
   const saveState = document.getElementById('saveState');
   const stopBox = document.getElementById('stopBox');
   const stopReasons = document.getElementById('stopReasons');
@@ -1374,20 +1383,12 @@ header.app-header h1 {
     </footer>
   `;
 
-  let lastInput = null;
-  let lastInputSignature = null;
   let version = 0;
   let busy = false;
-  let saved = false;
-  let saveBusy = false;
   let previewWatchdog = null;
-  let saveWatchdog = null;
   let disclaimerTimer = null;
   let disclaimerFirstShownAt = null;
   let disclaimerShownForVersion = null;
-
-  saveButton.disabled = true;
-  saveButton.hidden = true;
 
   /* DEFAULT PRESELECTED VALUES */
 
@@ -2006,9 +2007,7 @@ header.app-header h1 {
 
   function clearRequestWatchdogs() {
     window.clearTimeout(previewWatchdog);
-    window.clearTimeout(saveWatchdog);
     previewWatchdog = null;
-    saveWatchdog = null;
   }
 
   function resetTransientNotices() {
@@ -2027,12 +2026,10 @@ header.app-header h1 {
       output.classList.remove('report-notices-dismissed');
     }
     window.clearTimeout(disclaimerTimer);
-    const timeRemaining = Math.max(0, 3000 - (Date.now() - disclaimerFirstShownAt));
+    const remaining = Math.max(0, 3000 - (Date.now() - disclaimerFirstShownAt));
     disclaimerTimer = window.setTimeout(() => {
-      if (seq === version) {
-        output.classList.add('report-notices-dismissed');
-      }
-    }, timeRemaining);
+      if (seq === version) output.classList.add('report-notices-dismissed');
+    }, remaining);
   }
 
   function unlockCalculate() {
@@ -2042,39 +2039,27 @@ header.app-header h1 {
   }
 
   function invalidate() {
-    const requestWasRunning = busy || saveBusy;
+    const wasRunning = busy;
     version++;
     clearRequestWatchdogs();
     resetTransientNotices();
-    // The old server call may still finish, but it no longer owns the UI.
-    // A new calculation must never inherit its disabled Calculate button.
     unlockCalculate();
-    saveBusy = false;
-    lastInput = null;
-    lastInputSignature = null;
-    saved = false;
-
     result.style.display = 'none';
-    saveButton.disabled = true;
-    saveButton.hidden = true;
-    saveState.textContent = '';
-    saveState.classList.remove('unsaved', 'pending');
     resultLoading.hidden = true;
     output.hidden = true;
-    message.textContent = requestWasRunning
-      ? 'Values changed. The previous assessment is no longer current; an earlier save may still finish. Calculate again using the updated values.'
+    message.textContent = wasRunning
+      ? 'Values changed. Previous results are no longer current; calculate again.'
       : '';
   }
 
   form.addEventListener('input', invalidate);
   form.addEventListener('change', invalidate);
 
-  // Browser back/forward cache can restore a suspended Google Apps Script call.
-  // Clear its stale loading state instead of displaying an endless spinner.
+  // Browser history may restore the page while an old request is pending.
   window.addEventListener('pageshow', e => {
     if (e.persisted && busy) {
       invalidate();
-      message.textContent = 'Page restored. An earlier save may still complete; recalculate with the current values.';
+      message.textContent = 'Page restored. Calculate again with the current values.';
     }
   });
 
@@ -2324,49 +2309,7 @@ header.app-header h1 {
     message.textContent = detail;
   }
 
-  function markSavePending() {
-    saveState.classList.remove('unsaved');
-    saveState.classList.add('pending');
-    saveState.textContent = 'Saving assessment to the restricted history sheet…';
-    saveButton.hidden = true;
-    saveButton.disabled = true;
-  }
-
-  function markSaved(input, when) {
-    saved = true;
-    saveState.classList.remove('unsaved', 'pending');
-    const displayWhen = when ? new Date(when).toLocaleString() : '';
-    saveState.textContent = 'Saved automatically · CR ' + input.demoId +
-      (displayWhen ? ' · ' + displayWhen : '');
-    saveButton.hidden = true;
-    saveButton.disabled = true;
-  }
-
-  function markSaveFailed(err) {
-    if (saved) return; // A later error must not erase a confirmed successful retry.
-    saved = false;
-    saveState.classList.remove('pending');
-    saveState.classList.add('unsaved');
-    const detail = (err && err.message) || String(err);
-    saveState.textContent = 'NOT SAVED · ' + detail + '. Use Retry save.';
-    saveButton.hidden = false;
-    saveButton.disabled = false;
-    message.textContent = 'Assessment not saved; review the error and retry.';
-  }
-
-  /* CALCULATE — SHOW READ-ONLY REPORT, THEN CONFIRM SAVE */
-
-  function markSaveUnconfirmed() {
-    if (saved) return;
-    saveState.classList.remove('pending');
-    saveState.classList.add('unsaved');
-    saveState.textContent =
-      'SAVE NOT CONFIRMED · Google Apps Script is taking longer than expected. ' +
-      'The previous request may still save. Use Retry save with the same ' +
-      'assessment ID and verify AssessmentHistory before relying on this record.';
-    saveButton.hidden = false;
-    saveButton.disabled = false;
-  }
+  /* PUBLIC CALCULATION — NO AUTHENTICATION OR SPREADSHEET WRITES */
 
   form.addEventListener('submit', e => {
     e.preventDefault();
@@ -2376,141 +2319,59 @@ header.app-header h1 {
       return;
     }
 
+    // This request calls only assessCase(), which performs arithmetic and
+    // never writes patient data to Google Sheets.
     const input = Object.fromEntries(new FormData(form).entries());
-    const signature = JSON.stringify(input);
-    // Re-running identical input after a timeout reuses the same request ID.
-    // This avoids duplicate history rows if the first save completes late.
-    input._entryId = lastInput && !saved &&
-      lastInputSignature === signature ? lastInput._entryId :
-      ((window.crypto && typeof window.crypto.randomUUID === 'function')
-        ? window.crypto.randomUUID()
-        : (Date.now().toString(36) + '_' +
-          Math.random().toString(36).slice(2) + '_' +
-          Math.random().toString(36).slice(2)));
-
-    lastInput = input;
-    lastInputSignature = signature;
     clearRequestWatchdogs();
     resetTransientNotices();
-    const seq = ++version; // A second click never accepts an older response.
+    const seq = ++version;
     busy = true;
     calculateButton.disabled = true;
     calculateButton.textContent = 'Preparing assessment…';
-
     result.style.display = 'block';
+    resultLoading.hidden = false;
     output.hidden = true;
     output.replaceChildren();
-    resultLoading.hidden = false;
     loadingText.textContent = 'Preparing assessment…';
     stopBox.hidden = true;
     stopReasons.replaceChildren();
     warningsBox.replaceChildren();
-    markSavePending();
-    message.textContent = 'Assessment requested.';
+    message.textContent = 'Calculating…';
 
     window.requestAnimationFrame(() => {
-      if (seq === version) {
-        result.scrollIntoView({behavior: 'smooth', block: 'start'});
-      }
+      if (seq === version) result.scrollIntoView({behavior: 'smooth', block: 'start'});
     });
 
-    let previewFinished = false;
-    let previewReady = false;
-    let saveFinished = false;
-
-    function renderSafely(assessment) {
-      try {
-        return showReport(assessment, seq, input);
-      } catch (err) {
-        console.error('PHO assessment display error:', err);
-        reportError('Could not display the assessment. Check the data and try again.');
-        return false;
-      }
-    }
-
-    // A lost preview call must never leave a spinner showing indefinitely.
     previewWatchdog = window.setTimeout(() => {
-      if (seq !== version || previewFinished || previewReady) return;
-      resultLoading.hidden = true;
-      output.hidden = false;
-      output.replaceChildren(element('div', 'report-no-dose',
-        'The assessment preview has not responded yet. Waiting for the ' +
-        'save request; check your connection if this continues.'));
-      message.textContent = 'Server response delayed. This is not a confirmed assessment.';
-    }, 20000);
-
-    // A slow or disconnected save is UNKNOWN, not automatically a failure.
-    // Retry reuses the same _entryId to avoid duplicate history entries.
-    saveWatchdog = window.setTimeout(() => {
-      if (seq !== version || saveFinished) return;
+      if (seq !== version) return;
       unlockCalculate();
-      markSaveUnconfirmed();
-      if (!previewReady) {
-        resultLoading.hidden = true;
-        output.hidden = false;
-        output.replaceChildren(element('div', 'report-no-dose',
-          'No assessment response yet. Please check your connection and retry.'));
-      }
-      message.textContent = 'Save status unknown. Verify the history sheet or use Retry save.';
-    }, 45000);
+      reportError('The server did not respond. Check your connection and try again.');
+    }, 25000);
 
     google.script.run
-      .withSuccessHandler(r => {
-        previewFinished = true;
+      .withSuccessHandler(assessment => {
         if (seq !== version) return;
-        window.clearTimeout(previewWatchdog);
-        previewReady = renderSafely(r);
-        if (!saveFinished && previewReady) {
-          message.textContent = 'Assessment displayed; automatic save still in progress.';
+        clearRequestWatchdogs();
+        unlockCalculate();
+        try {
+          if (!showReport(assessment, seq, input)) {
+            message.textContent = 'Could not display the assessment. Please retry.';
+          } else {
+            message.textContent = 'Assessment calculated. No data saved.';
+          }
+        } catch (err) {
+          console.error('PHO public assessment rendering error:', err);
+          reportError('Unable to display the assessment. Check your inputs and retry.');
         }
       })
       .withFailureHandler(err => {
-        previewFinished = true;
         if (seq !== version) return;
-        window.clearTimeout(previewWatchdog);
-        if (!previewReady && !saveFinished) {
-          resultLoading.hidden = true;
-          output.hidden = false;
-          output.replaceChildren(element('div', 'report-no-dose',
-            'Preview unavailable. Waiting for the save result…'));
-        } else if (!previewReady) {
-          reportError('Assessment preview unavailable: ' +
-            ((err && err.message) || String(err)));
-        }
+        clearRequestWatchdogs();
+        unlockCalculate();
+        reportError('Assessment unavailable: ' +
+          ((err && err.message) || String(err)));
       })
       .assessCase(input);
-
-    // The original backend remains the only authority for saving records.
-    // It preserves append-only history and the request-ID retry mechanism.
-    google.script.run
-      .withSuccessHandler(payload => {
-        saveFinished = true;
-        if (seq !== version) return;
-        window.clearTimeout(saveWatchdog);
-        unlockCalculate();
-        if (!payload || !renderSafely(payload.assessment)) {
-          markSaveFailed(new Error('Assessment response was incomplete'));
-          return;
-        }
-        previewReady = true;
-        if (payload.saved === true) {
-          markSaved(input, payload.savedAt);
-          message.textContent = 'Assessment complete.';
-        } else {
-          markSaveFailed(new Error(payload.saveError || 'Save not confirmed'));
-        }
-      })
-      .withFailureHandler(err => {
-        saveFinished = true;
-        if (seq !== version) return;
-        window.clearTimeout(saveWatchdog);
-        unlockCalculate();
-        markSaveFailed(err);
-        if (previewFinished && !previewReady) {
-          reportError('Assessment unavailable. Check the entered values or the error above.');
-        }
-      })
-      .assessAndSave(input);
   });
 
   /* RESET */
@@ -2532,58 +2393,6 @@ header.app-header h1 {
       invalidate();
       showTab(0);
     });
-
-  /* RETRY SAVE AFTER AUTOMATIC SAVE FAILURE */
-
-  saveButton.addEventListener('click', () => {
-    if (
-      !lastInput ||
-      busy ||
-      saveBusy ||
-      saved
-    ) return;
-
-    const input =
-      Object.assign({}, lastInput);
-
-    const seq = version;
-
-    saveBusy = true;
-    saveButton.disabled = true;
-    message.textContent = 'Retrying save...';
-
-    google.script.run
-      .withSuccessHandler(text => {
-        saveBusy = false;
-
-        if (seq !== version) return;
-
-        saved = true;
-        saveButton.hidden = true;
-
-        markSaved(input);
-        message.textContent = text;
-      })
-      .withFailureHandler(err => {
-        saveBusy = false;
-
-        if (seq !== version || saved) return;
-
-        saveButton.disabled = false;
-        saveButton.hidden = false;
-
-        saveState.classList.add('unsaved');
-
-        saveState.textContent =
-          'NOT SAVED — ' +
-          ((err && err.message) || String(err)) +
-          '. Retry save.';
-
-        message.textContent =
-          'Save failed — NOT SAVED.';
-      })
-      .saveAssessment(input);
-  });
 
   /* PRINT */
 
