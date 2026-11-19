@@ -101,12 +101,16 @@ function requireAuthorisedUser_() {
 }
 
 function doGet() {
+  // Apps Script ignores viewport meta tags written directly in Index.html.
+  // Register it on HtmlOutput to render at device width on mobile.
   return HtmlService.createHtmlOutputFromFile('Index')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setTitle('PGICH ALL Maintenance');
 }
 function showCalculator() {
   SpreadsheetApp.getUi().showSidebar(
     HtmlService.createHtmlOutputFromFile('Index')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1')
   );
 }
 
