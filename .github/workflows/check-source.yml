@@ -1,4 +1,4 @@
-name: Check PGICH source
+name: Check PHO ALL source
 
 on:
   pull_request:
