@@ -31,7 +31,7 @@ for (const label of ['Patient', 'CBC', 'LFT Panel', 'Clinical']) {
   requireIncludes(html, 'calculator tab', "'" + label + "'");
 }
 for (const id of ['tabs', 'result', 'output', 'stopBox', 'stopReasons',
-  'saveState', 'save', 'calculate']) {
+  'saveState', 'calculate']) {
   requireIncludes(html, 'element ID', 'id="' + id + '"');
 }
 for (const fn of ['function doGet(', 'function assessCase(', 'function assessAndSave(',
@@ -39,9 +39,12 @@ for (const fn of ['function doGet(', 'function assessCase(', 'function assessAnd
   requireIncludes(code, 'backend function', fn);
 }
 requireIncludes(code, 'mobile viewport metadata', ".addMetaTag('viewport'");
-requireIncludes(script, 'assessment preview', '.assessCase(input)');
-requireIncludes(script, 'automatic history saving', '.assessAndSave(input)');
-requireIncludes(script, 'retry save', '.saveAssessment(input)');
+requireIncludes(script, 'public calculation call', '.assessCase(input)');
+assert.ok(!script.includes('.assessAndSave(input)'), 'Anonymous UI must never attempt spreadsheet writes');
+assert.ok(!script.includes('.saveAssessment(input)'), 'Anonymous UI must not show save retry');
+requireIncludes(code, 'server-side public read-only mode', 'publicReadOnly: true');
+requireIncludes(code, 'server-side write protection', 'if (CFG.publicReadOnly)');
+requireIncludes(html, 'plain disclosure that records are not saved', 'Entries are not saved');
 requireIncludes(script, 'hard-stop handling', 'stopBox.hidden = !r.hardStop');
 requireIncludes(html, 'small final-page signature', 'Developed by Dr Aman Singh');
 
@@ -93,7 +96,13 @@ const hardStop = assess({...fixture, anc: 400});
 assert.equal(hardStop.hardStop, true);
 assert.equal(hardStop.candidate, null);
 
+// Anonymous guests cannot use the older writable endpoints.
+assert.throws(() => runInNewContext(code + '\nassessAndSave({});', {}, {timeout:3000}),
+  /Public calculator: saving is disabled/);
+assert.throws(() => runInNewContext(code + '\nsaveAssessment({});', {}, {timeout:3000}),
+  /Public calculator: saving is disabled/);
+
 
 console.log('PHO source checks passed: valid JS, clean document start, 4 tabs,');
-console.log('mobile metadata, hard-stop interface, and assessment/save entry points.');
+console.log('mobile metadata, hard-stop interface and public read-only assessment.');
 console.log('Synthetic arithmetic checks: unchanged, +10%, -10%, hard stop, and BSA references passed.');
