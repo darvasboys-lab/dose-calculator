@@ -1,5 +1,7 @@
 # Connect GitHub to the existing PHO ALL Calculator Apps Script web app
 
+**Public access:** The current source is a read-only demo. After updating the source, use Apps Script **Deploy → Manage deployments → Edit existing web-app deployment**, choose **Execute as: Me** and **Who has access: Anyone** (anonymous), then publish a new version to retain the existing `/exec` URL. Do **not** choose **User accessing the web app**, which prompts every visitor to sign in. No visitor assessments are saved; the backend blocks `assessAndSave` and `saveAssessment`. Use fictional data only. This setting must be changed in the Google Apps Script deployment UI, not in GitHub.
+
 **Current state:** The GitHub Actions workflow is installed. It will NOT be able to deploy until the project owner adds the Google account credentials securely in a protected GitHub environment.
 
 ## What will happen
@@ -65,12 +67,12 @@ Use environment-level variables and secrets, not a repository file. A protected 
 
 ## Step 5: Trigger the first deployment
 
-1. In GitHub select Actions → Deploy PGICH calculator to Apps Script.
+1. In GitHub select Actions → Deploy PHO ALL Calculator to Apps Script.
 2. Select Run workflow → main.
 3. Review and approve the production deployment when requested.
 4. Confirm both workflow jobs succeed.
 5. Open the existing /exec link in an incognito mobile browser to check the current UI.
-6. Test only with fictional CR cases. Confirm assessment rendering, automatic saving, old DemoCases preservation, latest-by-CR history, and toxicity warnings.
+6. Test only with fictional CR cases. Confirm the read-only result, no save attempts, existing DemoCases preservation and persistent toxicity warnings. Test an incognito browser without a Google account to confirm the deployment settings.
 
 The first deployment will intentionally make the live script Code.gs and Index.html match GitHub, so back up online-only edits first.
 
@@ -84,7 +86,8 @@ Once configured, pushing approved changes to Code.gs or Index.html on GitHub mai
 - Wrong ID: Script ID and Deployment ID are DIFFERENT; the workflow checks the deployment belongs to that project.
 - Authorisation failed: Re-authorise clasp locally with the correct Google account and replace the GitHub environment secret.
 - Cannot find Code.gs/Code.js or Index.html: Verify your existing Apps Script project contains those files. The workflow deliberately stops rather than generating duplicate script files.
-- Save fails while the page opens: The current Code.gs requires active-user email allowlisting via PGICH_ALLOWED_EMAILS; don't weaken clinical-data access controls to make a public demo work.
+- Sign-in prompt: In **Deploy → Manage deployments**, set **Execute as: Me** and **Who has access: Anyone** (anonymous), selecting a new version on the existing deployment. Changing source files alone does not change this setting.
+- Attempted save: Public mode deliberately disables all web-app save endpoints; never remove that guard to let arbitrary visitors write sensitive records.
 - If GitHub Actions cannot run due to organisation policy, ask your GitHub administrator to enable the approved Actions workflow.
 
 ## Clinical security
