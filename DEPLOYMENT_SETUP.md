@@ -1,4 +1,4 @@
-# Connect GitHub to the existing PGICH Google Apps Script web app
+# Connect GitHub to the existing PHO ALL Calculator Apps Script web app
 
 **Current state:** The GitHub Actions workflow is installed. It will NOT be able to deploy until the project owner adds the Google account credentials securely in a protected GitHub environment.
 
