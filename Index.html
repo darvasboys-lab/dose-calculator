@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PGICH ALL Maintenance Calculator</title>
+<title>PHO ALL Calculator</title>
 
 <style>
 /*
@@ -964,6 +964,79 @@ header::after { display: none !important; }
 }
 
 
+/* Explicit calculation breakdown in the result card. */
+.report-calc-panel,
+.report-reference {
+  padding: 14px;
+  border: 1px solid #e2eaf1;
+  border-radius: 14px;
+  background: #fbfcfd;
+}
+.report-panel-heading {
+  margin: 0 0 8px;
+  color: #3f5b72;
+  font-size: 12px;
+  font-weight: 750;
+}
+.report-calc-equation {
+  margin: 0;
+  color: #28465b;
+  font-size: 14px;
+  font-weight: 630;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.report-calc-explanation {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #e8f2fa;
+  color: #345d78;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.55;
+}
+.report-equation-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid #dce8f0;
+}
+.report-equation-label {
+  flex: 0 0 34%;
+  color: #60778a;
+  font-size: 11.5px;
+  font-weight: 720;
+}
+.report-equation-value {
+  flex: 1;
+  min-width: 0;
+  color: #213f57;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 760;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.report-reference {
+  background: #fff;
+}
+.report-reference .report-dose-title {
+  margin-bottom: 10px;
+}
+.report-reference .report-disclaimer,
+.report-dose .report-disclaimer {
+  margin-top: 11px;
+}
+@media (max-width: 360px) {
+  .report-equation-row { display: block; }
+  .report-equation-label { display: block; margin-bottom: 5px; }
+  .report-equation-value { text-align: left; }
+}
+
 /* Compact premium gold title — no banner, badge, overline or tagline. */
 header.app-header {
   width: 100%;
@@ -1023,7 +1096,7 @@ header.app-header h1 {
 <main>
 
 <header class="app-header">
-  <h1>PGICH ALL Maintenance Calculator</h1>
+  <h1>PHO ALL Calculator</h1>
 </header>
 
 <nav id="tabs" class="tabs"
@@ -1864,31 +1937,82 @@ header.app-header h1 {
     hero.appendChild(element('span', 'report-cr', 'CR ' + input.demoId));
     output.appendChild(hero);
 
+    // All arithmetic displayed below comes from the same server assessment
+    // and the entered inputs. No alternate clinical dose rules are introduced.
+    const bsa = Number(r.bsa);
+    const height = Number(input.height);
+    const weight = Number(input.weight);
     const basics = element('div', 'report-grid');
-    basics.appendChild(metric('BODY SURFACE AREA', r.bsa == null ? '—' : r.bsa, 'm²'));
-    basics.appendChild(metric('REVIEW', r.hardStop ? 'Required' : (r.candidate ? 'Candidate' : 'Required')));
+    basics.appendChild(metric('BODY SURFACE AREA', Number.isFinite(bsa) ? bsa : '—', 'm²'));
+    basics.appendChild(metric(
+      'DOSE ADJUSTMENT',
+      r.hardStop ? 'Blocked' :
+        (r.candidate ? (Number(r.candidate.changePercent) > 0 ? '+' : '') +
+          r.candidate.changePercent + '%' : 'Not calculated')
+    ));
     output.appendChild(basics);
 
-    if (!r.hardStop && r.candidate) {
-      const dose = element('div', 'report-dose');
-      dose.appendChild(element('h3', 'report-dose-title', 'Illustrative dose candidate · clinician review'));
-      const doses = element('div', 'report-grid');
-      doses.appendChild(metric('6-MP', r.candidate.mpDaily, 'mg/day'));
-      doses.appendChild(metric('MTX', r.candidate.mtxWeekly, 'mg/week'));
-      dose.appendChild(doses);
-      const note = element('p', 'report-disclaimer',
-        'Illustrative change: ' + r.candidate.changePercent +
-        '%. Reference 6-MP: ' + r.ref6 + ' mg/day; MTX: ' + r.refM +
-        ' mg/week. These values are unvalidated and require clinician review.');
-      dose.appendChild(note);
-      output.appendChild(dose);
-    } else {
+    if (Number.isFinite(bsa) && Number.isFinite(height) && Number.isFinite(weight)) {
+      const bsacard = element('div', 'report-calc-panel');
+      bsacard.appendChild(element('div', 'report-panel-heading', 'BSA calculation'));
+      bsacard.appendChild(element('p', 'report-calc-equation',
+        '√(' + height + ' cm × ' + weight + ' kg ÷ 3600) = ' + bsa.toFixed(3) + ' m²'));
+      output.appendChild(bsacard);
+    }
+
+    if (r.hardStop) {
       output.appendChild(element('div', 'report-no-dose',
-        'No automated dose suggestion. Clinician review required.'));
+        'Automated dose calculations are blocked because a safety flag was reported. No dose candidate or reference values are displayed. Clinician review required.'));
+    } else if (!r.candidate) {
+      output.appendChild(element('div', 'report-no-dose',
+        'No numerical dose adjustment was generated for this CBC or clinical state. Clinician review required.'));
+    } else {
+      const percent = Number(r.candidate.changePercent);
+      const factor = 1 + percent / 100;
+      const factorDisplay = factor.toFixed(2);
+      const adjustment = element('div', 'report-dose');
+      adjustment.appendChild(element('h3', 'report-dose-title',
+        'CBC adjustment · illustrative estimate, not a prescription'));
+
+      const explanation = percent === 0
+        ? 'MAINTAIN: The current CBC matches the configured maintenance range. The rule applies a 0% change, so the calculated candidate equals the entered dose.'
+        : (percent > 0
+          ? 'INCREASE: The configured CBC and previous-count checks produced an illustrative ' + percent + '% change.'
+          : 'DECREASE: The configured CBC checks produced an illustrative ' + percent + '% change.');
+      adjustment.appendChild(element('p', 'report-calc-explanation', explanation));
+
+      const input6 = Number(input.current6);
+      const inputM = Number(input.currentM);
+      const row6 = element('div', 'report-equation-row');
+      row6.appendChild(element('span', 'report-equation-label', '6-MP · mg/day'));
+      row6.appendChild(element('div', 'report-equation-value',
+        input6 + ' × ' + factorDisplay + ' = ' + r.candidate.mpDaily + ' mg/day'));
+      adjustment.appendChild(row6);
+      const rowM = element('div', 'report-equation-row');
+      rowM.appendChild(element('span', 'report-equation-label', 'MTX · mg/week'));
+      rowM.appendChild(element('div', 'report-equation-value',
+        inputM + ' × ' + factorDisplay + ' = ' + r.candidate.mtxWeekly + ' mg/week'));
+      adjustment.appendChild(rowM);
+      adjustment.appendChild(element('p', 'report-disclaimer',
+        'These are current-dose percentage adjustments using the existing unvalidated prototype rules, not authorised treatment instructions.'));
+      output.appendChild(adjustment);
+
+      if (Number.isFinite(Number(r.ref6)) && Number.isFinite(Number(r.refM))) {
+        const refs = element('div', 'report-reference');
+        refs.appendChild(element('h3', 'report-dose-title',
+          'Separate BSA-derived reference arithmetic'));
+        const refGrid = element('div', 'report-grid');
+        refGrid.appendChild(metric('6-MP · 50 × BSA', r.ref6, 'mg/day'));
+        refGrid.appendChild(metric('MTX · 20 × BSA', r.refM, 'mg/week'));
+        refs.appendChild(refGrid);
+        refs.appendChild(element('p', 'report-disclaimer',
+          'Mathematical reference values based on unvalidated built-in coefficients (50 mg/m²/day and 20 mg/m²/week). NOT the adjusted candidate, a dose target, or a prescribing recommendation.'));
+        output.appendChild(refs);
+      }
     }
 
     output.appendChild(element('p', 'report-disclaimer',
-      'Clinical decision-support prototype only. This assessment is not an authorised prescription.'));
+      'Clinical decision-support prototype only. Not validated for prescribing; decisions require clinician review.'));
 
     warningsBox.replaceChildren();
     (r.warnings || []).forEach(w => {
