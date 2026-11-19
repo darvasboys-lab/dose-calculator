@@ -50,6 +50,13 @@ requireIncludes(code, 'Google Sheets menu title', "createMenu('PHO ALL Calculato
 requireIncludes(html, 'BSA arithmetic details', 'BSA-derived reference arithmetic');
 requireIncludes(html, '0%-adjustment explanation', 'the CBC rule applied 0%');
 requireIncludes(html, 'visible multiplication', "' × ' + factor + ' = '");
+requireIncludes(html, '3-second noncritical notice timer', 'Math.max(0, 3000 - (Date.now() - disclaimerFirstShownAt))');
+requireIncludes(html, 'transient caution wrapper', '#output.report-notices-dismissed .report-disclaimer');
+requireIncludes(html, 'recoverable caution link', "element('summary', '', 'Safety notes')");
+requireIncludes(html, 'do not auto-hide hard stops', "stopBox.hidden = !r.hardStop");
+requireIncludes(html, 'keep clinical warnings persistent', "(r.warnings || []).forEach");
+requireIncludes(html, 'reset notice timer after edits', 'resetTransientNotices();');
+
 
 // Confirm real arithmetic with fictional inputs, without Google Sheets access.
 const assess = runInNewContext(code + '\nassessCase;', {}, {timeout: 3000});
