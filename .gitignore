@@ -1,0 +1,31 @@
+# Credentials and local Apps Script linkage
+.clasprc.json
+.clasp.json
+.env
+.env.*
+*.pem
+*.key
+*credentials*
+*token*
+
+# NEVER commit patient records or exported hospital data
+data/
+records/
+patient-data/
+patient_records/
+exports/
+backups/
+*.csv
+*.tsv
+*.xls
+*.xlsx
+*.sqlite
+*.db
+*.jsonl
+*.ndjson
+*.zip
+*.pdf
+
+# Local tooling
+node_modules/
+.DS_Store
