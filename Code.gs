@@ -6,6 +6,7 @@
  * thresholds, access control, privacy, retention and deployment.
  */
 const CFG = Object.freeze({
+  publicReadOnly: true,          // Anonymous users: calculations only; never write patient records
   sheetIdProperty: 'PGICH_SHEET_ID',
   allowlistProperty: 'PGICH_ALLOWED_EMAILS',
   latestName: 'LatestByCR',
@@ -42,6 +43,13 @@ function onOpen() {
 }
 
 function setupWorkbook() {
+  // This administrative operation must not run on behalf of public visitors
+  // in a web app deployed as Execute as Me.
+  const actor = (Session.getActiveUser().getEmail() || '').toLowerCase();
+  const owner = (Session.getEffectiveUser().getEmail() || '').toLowerCase();
+  if (!actor || !owner || actor !== owner) {
+    throw new Error('Workbook setup is restricted to the signed-in script owner.');
+  }
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   if (!ss) throw new Error('Run setupWorkbook from a bound Google Sheet.');
   const props = PropertiesService.getScriptProperties();
@@ -354,6 +362,10 @@ function persistAssessment_(d, assessment) {
 
 /** Single call used by Calculate: assessment + auto-save, including toxicity. */
 function assessAndSave(d) {
+  // Server-side enforcement; hiding a button alone is not secure.
+  if (CFG.publicReadOnly) {
+    throw new Error('Public calculator: saving is disabled. No patient records were written.');
+  }
   const r = assessCase(d);
   const info = persistAssessment_(d, r);
   return {assessment: r, saved: true, cr: info.cr, savedAt: info.savedAt};
@@ -361,6 +373,9 @@ function assessAndSave(d) {
 
 /** Manual retry for a failed auto-save. */
 function saveAssessment(d) {
+  if (CFG.publicReadOnly) {
+    throw new Error('Public calculator: saving is disabled. No patient records were written.');
+  }
   const r = assessCase(d);
   const info = persistAssessment_(d, r);
   return 'Saved to AssessmentHistory for CR ' + info.cr +
