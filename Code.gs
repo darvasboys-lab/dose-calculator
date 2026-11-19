@@ -33,7 +33,7 @@ const LATEST_HEADERS = [
 ];
 
 function onOpen() {
-  SpreadsheetApp.getUi().createMenu('PGICH ALL')
+  SpreadsheetApp.getUi().createMenu('PHO ALL Calculator')
     .addItem('Initialise record sheets', 'setupWorkbook')
     .addItem('Open calculator', 'showCalculator')
     .addItem('Preview old DemoCases', 'previewLegacyMigration')
@@ -105,7 +105,7 @@ function doGet() {
   // Register it on HtmlOutput to render at device width on mobile.
   return HtmlService.createHtmlOutputFromFile('Index')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-    .setTitle('PGICH ALL Maintenance');
+    .setTitle('PHO ALL Calculator');
 }
 function showCalculator() {
   SpreadsheetApp.getUi().showSidebar(
