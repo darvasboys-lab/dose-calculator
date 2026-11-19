@@ -1428,9 +1428,9 @@ header.app-header h1 {
     <p class="welcome-overline">MAINTENANCE ASSESSMENT</p>
     <h2 id="welcomeTitle">PHO ALL Calculator</h2>
     <p class="welcome-subtitle">Your assessment workspace</p>
-    <div class="welcome-release">Build 2026.11.20 · Public demonstration</div>
-    <p class="welcome-privacy">Opens without sign-in. Calculations only;
-      records are not saved. Use fictional cases.</p>
+    <div class="welcome-release">Build 2026.11.20 · Research prototype</div>
+    <p class="welcome-privacy">Opens without sign-in. Assessments save to the linked Sheet.
+      Use fictional cases only.</p>
     <button type="button" id="welcomeStart" class="welcome-start">Start assessment</button>
   </section>
 </div>
@@ -1440,7 +1440,7 @@ header.app-header h1 {
   <h1>PHO ALL Calculator</h1>
 </header>
 <p class="public-mode-intro" role="note">
-  Open access · No sign-in · Fictional cases only · No records saved
+  No sign-in · Automatic Sheet saving · Research prototype
 </p>
 
 <nav id="tabs" class="tabs"
@@ -1481,13 +1481,19 @@ header.app-header h1 {
 
   <div id="output" class="summary" hidden></div>
 
-  <div id="saveState" class="public-access-note" role="note">
-    <span aria-hidden="true">◌</span> No login required · Calculations only · Entries are not saved
+  <div id="saveState" class="save-state" role="status" aria-live="polite">
+    Ready to calculate · No assessment saved yet
   </div>
 
   <ul id="warnings"></ul>
 
   <div class="actions">
+    <button id="save"
+      class="action secondary"
+      type="button"
+      hidden disabled>
+      Retry save
+    </button>
     <button id="print"
       class="action secondary"
       type="button">
@@ -1508,6 +1514,7 @@ header.app-header h1 {
   const result = document.getElementById('result');
   const message = document.getElementById('message');
   const output = document.getElementById('output');
+  const saveButton = document.getElementById('save');
   const saveState = document.getElementById('saveState');
   const stopBox = document.getElementById('stopBox');
   const stopReasons = document.getElementById('stopReasons');
@@ -1551,6 +1558,10 @@ header.app-header h1 {
 
   let version = 0;
   let busy = false;
+  let saveBusy = false;
+  let saved = false;
+  let lastInput = null;
+  let lastInputSignature = null;
   let previewWatchdog = null;
   let disclaimerTimer = null;
   let disclaimerFirstShownAt = null;
@@ -2205,16 +2216,24 @@ header.app-header h1 {
   }
 
   function invalidate() {
-    const wasRunning = busy;
+    const wasRunning = busy || saveBusy;
     version++;
     clearRequestWatchdogs();
     resetTransientNotices();
     unlockCalculate();
+    saveBusy = false;
+    saved = false;
+    lastInput = null;
+    lastInputSignature = null;
+    saveButton.disabled = true;
+    saveButton.hidden = true;
+    saveState.classList.remove('unsaved', 'pending');
+    saveState.textContent = 'Ready to calculate · No assessment saved yet';
     result.style.display = 'none';
     resultLoading.hidden = true;
     output.hidden = true;
     message.textContent = wasRunning
-      ? 'Values changed. Previous results are no longer current; calculate again.'
+      ? 'Values changed. Previous result is out of date; calculate again.'
       : '';
   }
 
@@ -2475,7 +2494,34 @@ header.app-header h1 {
     message.textContent = detail;
   }
 
-  /* PUBLIC CALCULATION — NO AUTHENTICATION OR SPREADSHEET WRITES */
+  /* CALCULATE AND SAVE — SIMPLE ONE-DOCTOR DEMO WORKFLOW */
+
+  function markSavePending() {
+    saveState.classList.remove('unsaved');
+    saveState.classList.add('pending');
+    saveState.textContent = 'Saving assessment to Google Sheets…';
+    saveButton.hidden = true;
+    saveButton.disabled = true;
+  }
+
+  function markSaved(input, when) {
+    saved = true;
+    saveState.classList.remove('unsaved', 'pending');
+    const time = when ? new Date(when).toLocaleString() : '';
+    saveState.textContent = 'Saved automatically · CR ' + input.demoId +
+      (time ? ' · ' + time : '');
+    saveButton.hidden = true;
+    saveButton.disabled = true;
+  }
+
+  function markSaveFailed(reason) {
+    if (saved) return;
+    saveState.classList.remove('pending');
+    saveState.classList.add('unsaved');
+    saveState.textContent = 'NOT SAVED · ' + reason;
+    saveButton.disabled = false;
+    saveButton.hidden = false;
+  }
 
   form.addEventListener('submit', e => {
     e.preventDefault();
@@ -2485,9 +2531,19 @@ header.app-header h1 {
       return;
     }
 
-    // This request calls only assessCase(), which performs arithmetic and
-    // never writes patient data to Google Sheets.
     const input = Object.fromEntries(new FormData(form).entries());
+    const signature = JSON.stringify(input);
+    // Retry the same logical save with the same ID to avoid duplicate rows.
+    input._entryId = lastInput && !saved && signature === lastInputSignature
+      ? lastInput._entryId
+      : ((window.crypto && typeof window.crypto.randomUUID === 'function')
+          ? window.crypto.randomUUID()
+          : (Date.now().toString(36) + '_' +
+            Math.random().toString(36).slice(2) + '_' +
+            Math.random().toString(36).slice(2)));
+
+    lastInput = input;
+    lastInputSignature = signature;
     clearRequestWatchdogs();
     resetTransientNotices();
     const seq = ++version;
@@ -2502,42 +2558,76 @@ header.app-header h1 {
     stopBox.hidden = true;
     stopReasons.replaceChildren();
     warningsBox.replaceChildren();
-    message.textContent = 'Calculating…';
+    markSavePending();
+    message.textContent = 'Calculating and saving…';
 
     window.requestAnimationFrame(() => {
       if (seq === version) result.scrollIntoView({behavior: 'smooth', block: 'start'});
     });
 
+    // Google calls may finish late. Do not claim a failed save on a timeout.
     previewWatchdog = window.setTimeout(() => {
       if (seq !== version) return;
       unlockCalculate();
-      reportError('The server did not respond. Check your connection and try again.');
-    }, 25000);
+      markSaveFailed('Save status not confirmed. Check the Sheet or choose Retry save.');
+      reportError('Google Apps Script is taking longer than expected. Please check your connection.');
+    }, 45000);
 
     google.script.run
-      .withSuccessHandler(assessment => {
+      .withSuccessHandler(payload => {
         if (seq !== version) return;
         clearRequestWatchdogs();
         unlockCalculate();
         try {
-          if (!showReport(assessment, seq, input)) {
-            message.textContent = 'Could not display the assessment. Please retry.';
+          if (!payload || !showReport(payload.assessment, seq, input)) {
+            markSaveFailed('Assessment response was incomplete. Please retry.');
+            return;
+          }
+          if (payload.saved === true) {
+            markSaved(input, payload.savedAt);
+            message.textContent = 'Assessment calculated and saved.';
           } else {
-            message.textContent = 'Assessment calculated. No data saved.';
+            markSaveFailed(payload.saveError || 'Google Sheet could not save this assessment.');
+            message.textContent = 'Assessment calculated, but not saved. Select Retry save.';
           }
         } catch (err) {
-          console.error('PHO public assessment rendering error:', err);
-          reportError('Unable to display the assessment. Check your inputs and retry.');
+          console.error('PHO assessment report display error:', err);
+          markSaveFailed('Could not confirm the assessment. Please retry.');
+          reportError('Unable to display the assessment; please retry.');
         }
       })
       .withFailureHandler(err => {
         if (seq !== version) return;
         clearRequestWatchdogs();
         unlockCalculate();
+        markSaveFailed((err && err.message) || String(err));
         reportError('Assessment unavailable: ' +
           ((err && err.message) || String(err)));
       })
-      .assessCase(input);
+      .assessAndSave(input);
+  });
+
+  saveButton.addEventListener('click', () => {
+    if (!lastInput || busy || saveBusy || saved) return;
+    const input = Object.assign({}, lastInput);
+    const seq = version;
+    saveBusy = true;
+    saveButton.disabled = true;
+    saveState.textContent = 'Retrying Google Sheets save…';
+    google.script.run
+      .withSuccessHandler(text => {
+        saveBusy = false;
+        if (seq !== version) return;
+        markSaved(input);
+        message.textContent = text;
+      })
+      .withFailureHandler(err => {
+        saveBusy = false;
+        if (seq !== version || saved) return;
+        markSaveFailed((err && err.message) || String(err));
+        message.textContent = 'Save failed. The calculation is not a saved record.';
+      })
+      .saveAssessment(input);
   });
 
   /* RESET */
