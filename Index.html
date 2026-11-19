@@ -1,0 +1,1376 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PGICH ALL Maintenance Calculator</title>
+
+<style>
+:root {
+  --blue:#176a96;
+  --green:#087b51;
+  --red:#b52731;
+  --ink:#24384b;
+  --muted:#718090;
+  --gold:#937029;
+}
+
+* {
+  box-sizing:border-box;
+}
+
+body {
+  margin:0;
+  background:#f3f6fa;
+  color:var(--ink);
+  font:15px system-ui,Arial,sans-serif;
+}
+
+main {
+  max-width:720px;
+  margin:auto;
+  padding:10px;
+}
+
+/* MINIMAL HEADER */
+
+header {
+  background:#fff;
+  color:#1e3548;
+  padding:19px 18px;
+  border:1px solid #e2e7eb;
+  border-left:3px solid #a8823f;
+  border-radius:13px;
+  box-shadow:0 2px 10px rgba(16,37,57,.035);
+}
+
+h1 {
+  font-size:19px;
+  margin:0;
+  font-weight:750;
+  letter-spacing:-.025em;
+}
+
+h2 {
+  font-size:18px;
+  margin:0 0 16px;
+}
+
+/* FOUR TABS */
+
+.tabs {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:5px;
+  margin-top:12px;
+}
+
+.tab {
+  padding:12px 2px;
+  border:0;
+  border-radius:9px;
+  background:#e2ebf2;
+  color:#29465b;
+  font-weight:700;
+  cursor:pointer;
+  font-size:12px;
+}
+
+.tab.active {
+  background:var(--blue);
+  color:#fff;
+}
+
+/* FORM */
+
+section {
+  background:#fff;
+  padding:16px;
+  margin:12px 0;
+  border:1px solid #dbe3eb;
+  border-radius:12px;
+}
+
+section[hidden] {
+  display:none;
+}
+
+.stack {
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+
+.field {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.field-label {
+  font-size:14px;
+  font-weight:700;
+}
+
+.hint {
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.5;
+}
+
+input:not([type=range]):not([type=checkbox]) {
+  width:100%;
+  min-width:0;
+  border:1px solid #b7c7d3;
+  border-radius:9px;
+  background:#fff;
+  color:var(--ink);
+  padding:12px;
+  font:600 17px system-ui;
+}
+
+/* SLIDERS */
+
+input[type=range] {
+  padding:0;
+  accent-color:var(--blue);
+  border:0;
+  cursor:pointer;
+  width:100%;
+  min-width:0;
+}
+
+.rangeLine {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.rangeLine input[type=number] {
+  width:83px!important;
+  text-align:center;
+}
+
+/* LARGE +/- CONTROLS */
+
+.stepper {
+  display:grid;
+  grid-template-columns:
+    minmax(56px,1fr)
+    minmax(86px,1.08fr)
+    minmax(56px,1fr);
+  gap:8px;
+  align-items:center;
+  max-width:318px;
+  margin-inline:auto;
+  width:100%;
+}
+
+.stepper input {
+  height:56px;
+  padding:6px 2px!important;
+  font-size:21px!important;
+  text-align:center;
+  font-weight:750!important;
+  border:1.5px solid #bdcbd5!important;
+  border-radius:11px!important;
+  background:#fafbfd!important;
+}
+
+.stepper button {
+  height:72px;
+  min-height:72px;
+  border:0;
+  border-radius:12px;
+  background:var(--blue);
+  color:white;
+  font-size:43px;
+  font-weight:650;
+  line-height:1;
+}
+
+/* YES / NO BUTTONS */
+
+.choices {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+}
+
+.choices.three {
+  grid-template-columns:repeat(3,1fr);
+}
+
+.choice {
+  min-height:56px;
+  border:2px solid #cbd7df;
+  border-radius:10px;
+  background:white;
+  font-size:15px;
+  font-weight:700;
+  color:var(--ink);
+}
+
+.choice.selected.good {
+  background:#d8f3e6;
+  color:#08623f;
+  border-color:var(--green);
+}
+
+.choice.selected.bad {
+  background:#ffe1e2;
+  color:#991d27;
+  border-color:var(--red);
+}
+
+.choice.selected.neutral {
+  background:#fff0c9;
+  color:#835006;
+  border-color:#a06400;
+}
+
+/* BUTTONS */
+
+button {
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+
+button:active {
+  transform:translateY(1px);
+}
+
+button:disabled {
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+.actions {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:22px;
+}
+
+.action {
+  border:0;
+  border-radius:9px;
+  padding:13px 16px;
+  background:var(--blue);
+  color:#fff;
+  font-weight:700;
+}
+
+.action.secondary {
+  background:#dce9f2;
+  color:#214965;
+}
+
+/* BSA */
+
+.bsa {
+  background:#eaf3fa;
+  border-radius:9px;
+  padding:12px;
+  font-weight:700;
+}
+
+/* SAFETY HARD STOP — displayed only when triggered */
+.stop-alert {
+  padding:14px;
+  margin-bottom:12px;
+  background:#fff0f0;
+  border:2px solid #b52731;
+  border-radius:10px;
+  color:#8d1e29;
+  line-height:1.6;
+}
+.stop-alert[hidden] { display:none!important; }
+.stop-alert strong { display:block; margin-bottom:8px; }
+.stop-alert small { display:block; margin-top:8px; color:#6b3440; }
+
+/* RESULTS */
+
+.summary {
+  background:#eff5f9;
+  border-radius:9px;
+  padding:14px;
+  white-space:pre-line;
+  line-height:1.8;
+  overflow-wrap:anywhere;
+}
+
+#result {
+  display:none;
+}
+
+#message {
+  font-size:13px;
+  min-height:20px;
+  font-weight:600;
+}
+
+.action[hidden] { display:none!important; }
+.save-state {font-size:13px;font-weight:700;margin-top:12px;color:#08623f;line-height:1.5}
+.save-state.unsaved {color:#b52731}
+/* DEVELOPER CREDIT */
+
+.dev-credit {
+  text-align:center;
+  margin-top:22px;
+  padding:8px 0 0;
+  color:var(--gold);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.03em;
+}
+
+/* MOBILE */
+
+@media (max-width:430px) {
+  main {
+    padding:7px;
+  }
+
+  section {
+    padding:13px;
+  }
+
+  .stepper {
+    grid-template-columns:
+      minmax(49px,1fr)
+      minmax(82px,1.08fr)
+      minmax(49px,1fr);
+    gap:6px;
+    max-width:300px;
+  }
+
+  .stepper button {
+    height:68px;
+    min-height:68px;
+  }
+
+  .stepper input {
+    height:54px;
+    font-size:20px!important;
+  }
+
+  .choice {
+    font-size:13px;
+  }
+}
+
+@media print {
+  header,nav,form,#message,.actions {
+    display:none!important;
+  }
+
+  #result {
+    display:block!important;
+  }
+}
+</style>
+</head>
+
+<body>
+<main>
+
+<header>
+  <h1>PGICH ALL Maintenance Calculator</h1>
+</header>
+
+<nav id="tabs" class="tabs"
+  aria-label="Calculator tabs">
+</nav>
+
+<form id="f" novalidate></form>
+
+<p id="message" role="status"
+  aria-live="polite"></p>
+
+<section id="result">
+  <h2>Assessment Summary</h2>
+
+  <div id="stopBox" class="stop-alert" hidden role="alert">
+    <strong>HARD STOP — AUTOMATED DOSE SUGGESTION BLOCKED</strong>
+    <div id="stopReasons"></div>
+    <small>This alert blocks the software's dose suggestion; treatment decisions require the oncologist.</small>
+  </div>
+  <div id="output" class="summary"></div>
+  <div id="saveState" class="save-state" role="status" aria-live="polite"></div>
+  <ul id="warnings"></ul>
+
+  <div class="actions">
+    <button id="save" class="action secondary"
+      type="button" hidden disabled>
+      Retry save
+    </button>
+
+    <button id="print" class="action secondary"
+      type="button">
+      Print assessment
+    </button>
+  </div>
+
+  <footer class="dev-credit">
+    Developed by — Dr Aman Singh
+  </footer>
+</section>
+
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  const form = document.getElementById('f');
+  const tabsBox = document.getElementById('tabs');
+  const result = document.getElementById('result');
+  const message = document.getElementById('message');
+  const output = document.getElementById('output');
+  const saveButton = document.getElementById('save');
+  const saveState = document.getElementById('saveState');
+  const stopBox = document.getElementById('stopBox');
+  const stopReasons = document.getElementById('stopReasons');
+
+  const footer = `
+    <footer class="dev-credit">
+      Developed by — Dr Aman Singh
+    </footer>
+  `;
+
+  let lastInput = null;
+  let version = 0;
+  let busy = false;
+  let saved = false;
+  let saveBusy = false;
+
+  saveButton.disabled = true;
+  saveButton.hidden = true;
+
+  /* DEFAULT HEALTHY/NORMAL SELECTIONS */
+
+  // Prefilled UI values only.
+  // They are not clinically verified results.
+
+  const defaults = {
+    rising:'no',
+    fever:'no',
+    infection:'no',
+    jaundice:'no',
+    mucositis:'no',
+    tpmt:'normal',
+    nudt15:'normal',
+    adherence:'good'
+  };
+
+  const yesno = [
+    ['yes','YES','bad'],
+    ['no','NO','good']
+  ];
+
+  const genetics = [
+    ['normal','Normal','good'],
+    ['variant','Variant','bad'],
+    ['unknown','Unknown','neutral']
+  ];
+
+  /* FIELD GENERATORS */
+
+  function field(label, content) {
+    return `
+      <div class="field">
+        <span class="field-label">${label}</span>
+        ${content}
+      </div>
+    `;
+  }
+
+  function slider(
+    name,label,min,max,step,val
+  ) {
+    return field(label, `
+      <div class="rangeLine">
+
+        <input type="range"
+          data-slider="${name}"
+          min="${min}"
+          max="${max}"
+          step="${step}"
+          value="${val}"
+          aria-label="${label} slider">
+
+        <input type="number"
+          name="${name}"
+          min="${min}"
+          max="${max}"
+          step="any"
+          value="${val}"
+          required
+          aria-label="${label}">
+      </div>
+    `);
+  }
+
+  function plain(name,label,val) {
+    return field(label, `
+      <input name="${name}"
+        type="number"
+        min="0"
+        max="1000"
+        step="any"
+        value="${val}"
+        required
+        aria-label="${label}">
+    `);
+  }
+
+  function stepper(
+    name,label,val,step,max,
+    required=true,min=0
+  ) {
+    return field(label, `
+      <div class="stepper" data-step="${step}">
+
+        <button type="button"
+          data-delta="-1"
+          aria-label="Decrease ${label}">
+          −
+        </button>
+
+        <input name="${name}"
+          type="number"
+          inputmode="decimal"
+          min="${min}"
+          max="${max}"
+          step="any"
+          value="${val}"
+          ${required ? 'required' : ''}
+          aria-label="${label}">
+
+        <button type="button"
+          data-delta="1"
+          aria-label="Increase ${label}">
+          +
+        </button>
+
+      </div>
+    `);
+  }
+
+  function choice(name,label,items) {
+    const buttons = items.map(item => `
+      <button type="button"
+        class="choice ${item[2]}"
+        data-value="${item[0]}"
+        aria-pressed="false">
+        ${item[1]}
+      </button>
+    `).join('');
+
+    return field(label, `
+      <div class="choices
+        ${items.length === 3 ? 'three' : ''}"
+        data-choice="${name}">
+        ${buttons}
+      </div>
+
+      <input type="hidden"
+        name="${name}"
+        value="">
+    `);
+  }
+
+  /* FOUR TABS */
+
+  const pages = [
+
+    /* 1. PATIENT */
+
+    {
+      title:'Patient Details',
+
+      content:[
+        slider(
+          'age','Age (years)',
+          0,25,0.5,6
+        ),
+
+        slider(
+          'height','Height (cm)',
+          35,230,1,115
+        ),
+
+        slider(
+          'weight','Weight (kg)',
+          1,200,0.5,20
+        ),
+
+        `
+          <div class="bsa" id="bsa">
+            Estimated BSA: —
+          </div>
+        `,
+
+        plain(
+          'current6',
+          'Current 6-MP (mg/day)',
+          12
+        ),
+
+        plain(
+          'currentM',
+          'Current MTX (mg/week)',
+          12
+        ),
+
+        field('CR Number (4 digits)', `
+          <input name="demoId"
+            type="text"
+            inputmode="numeric"
+            pattern="[0-9]{4}"
+            maxlength="4"
+            autocomplete="off"
+            placeholder="0001"
+            required>
+        `)
+      ].join('')
+    },
+
+    /* 2. CBC */
+
+    {
+      title:'Complete Blood Count',
+
+      content:[
+        stepper(
+          'wbc','WBC / TLC (/µL)',
+          2500,100,200000
+        ),
+
+        stepper(
+          'anc','ANC (/µL)',
+          1000,100,200000
+        ),
+
+        stepper(
+          'alc','ALC (/µL)',
+          900,100,200000
+        ),
+
+        stepper(
+          'platelets','Platelets (/µL)',
+          180000,1000,2000000
+        ),
+
+        stepper(
+          'prevWbc','Previous WBC (/µL)',
+          2600,100,200000,false
+        ),
+
+        stepper(
+          'prevAnc','Previous ANC (/µL)',
+          1050,100,200000,false
+        )
+      ].join('')
+    },
+
+    /* 3. LFT PANEL */
+
+    {
+      title:'LFT Panel',
+
+      content:[
+        stepper(
+          'bilirubin',
+          'Total bilirubin (mg/dL)',
+          0.8,0.1,100
+        ),
+
+        stepper(
+          'biliULN',
+          'Bilirubin ULN (mg/dL)',
+          1,0.1,20,true,0.01
+        ),
+
+        stepper(
+          'ast',
+          'AST / SGOT (U/L)',
+          30,5,20000
+        ),
+
+        stepper(
+          'alt',
+          'ALT / SGPT (U/L)',
+          30,5,20000
+        ),
+
+        stepper(
+          'transULN',
+          'AST/ALT ULN (U/L)',
+          40,5,1000,true,1
+        ),
+
+        choice(
+          'rising',
+          'Transaminases rising?',
+          yesno
+        )
+      ].join('')
+    },
+
+    /* 4. CLINICAL */
+
+    {
+      title:'Clinical and Safety',
+
+      content:[
+        choice(
+          'fever',
+          'Fever in last 48 hours?',
+          yesno
+        ),
+
+        choice(
+          'infection',
+          'Serious infection?',
+          yesno
+        ),
+
+        choice(
+          'jaundice',
+          'Clinical jaundice?',
+          yesno
+        ),
+
+        choice(
+          'mucositis',
+          'Mucositis?',
+          yesno
+        ),
+
+        choice(
+          'tpmt',
+          'TPMT status',
+          genetics
+        ),
+
+        choice(
+          'nudt15',
+          'NUDT15 status',
+          genetics
+        ),
+
+        choice(
+          'adherence',
+          'Were all prescribed doses taken?',
+          [
+            ['good','YES','good'],
+            ['missed','NO','bad'],
+            ['unknown','Not sure','neutral']
+          ]
+        )
+      ].join('')
+    }
+  ];
+
+  /* TAB NAMES */
+
+  const tabNames = [
+    'Patient',
+    'CBC',
+    'LFT Panel',
+    'Clinical'
+  ];
+
+  tabsBox.innerHTML = tabNames.map(
+    (name,i) => `
+      <button type="button"
+        class="tab ${i === 0 ? 'active' : ''}"
+        data-tab="${i}"
+        aria-selected="${i === 0}">
+        ${i+1}. ${name}
+      </button>
+    `
+  ).join('');
+
+  /* GENERATE PAGES */
+
+  form.innerHTML = pages.map(
+    (page,i) => `
+      <section data-page="${i}"
+        ${i === 0 ? '' : 'hidden'}>
+
+        <h2>${page.title}</h2>
+
+        <div class="stack">
+          ${page.content}
+        </div>
+
+        <div class="actions">
+
+          ${i > 0 ? `
+            <button type="button"
+              class="action secondary"
+              data-go="${i-1}">
+              ← Previous
+            </button>
+          ` : ''}
+
+          ${i < 3 ? `
+            <button type="button"
+              class="action"
+              data-go="${i+1}">
+              Next →
+            </button>
+          ` : `
+            <button type="submit"
+              id="calculate"
+              class="action">
+              Calculate Assessment
+            </button>
+
+            <button type="button"
+              id="reset"
+              class="action secondary">
+              Reset
+            </button>
+          `}
+        </div>
+
+        ${footer}
+      </section>
+    `
+  ).join('');
+
+  const panels = [
+    ...form.querySelectorAll('[data-page]')
+  ];
+
+  const tabs = [
+    ...tabsBox.querySelectorAll('[data-tab]')
+  ];
+
+  const calculateButton =
+    document.getElementById('calculate');
+
+  /* TAB NAVIGATION */
+
+  function showTab(i) {
+
+    panels.forEach((p,n) => {
+      p.hidden = n !== i;
+    });
+
+    tabs.forEach((t,n) => {
+      t.classList.toggle(
+        'active',
+        n === i
+      );
+
+      t.setAttribute(
+        'aria-selected',
+        String(n === i)
+      );
+    });
+  }
+
+  /* SELECT A CLINICAL BUTTON */
+
+  function selectChoice(group,value) {
+
+    form.elements[group.dataset.choice].value =
+      value;
+
+    group.querySelectorAll('.choice')
+      .forEach(button => {
+
+        const selected =
+          button.dataset.value === value;
+
+        button.classList.toggle(
+          'selected',
+          selected
+        );
+
+        button.setAttribute(
+          'aria-pressed',
+          String(selected)
+        );
+      });
+  }
+
+  /* APPLY GREEN DEFAULTS */
+
+  function applyDefaultChoices() {
+
+    for (
+      const [name,value]
+      of Object.entries(defaults)
+    ) {
+
+      const group = form.querySelector(
+        `[data-choice="${name}"]`
+      );
+
+      if (group) {
+        selectChoice(group,value);
+      }
+    }
+  }
+
+  // Automatically preselect on opening
+  applyDefaultChoices();
+
+  /* TAB CLICKS */
+
+  tabsBox.addEventListener('click', e => {
+
+    const button =
+      e.target.closest('[data-tab]');
+
+    if (button) {
+      showTab(Number(button.dataset.tab));
+    }
+  });
+
+  /* FORM BUTTON CLICKS */
+
+  form.addEventListener('click', e => {
+
+    const go = e.target.closest('[data-go]');
+
+    if (go) {
+      showTab(Number(go.dataset.go));
+    }
+
+    /* +/- BUTTONS */
+
+    const btn = e.target.closest('[data-delta]');
+
+    if (btn) {
+
+      const group =
+        btn.closest('.stepper');
+
+      const input =
+        group.querySelector('input');
+
+      const step =
+        Number(group.dataset.step);
+
+      const direction =
+        Number(btn.dataset.delta);
+
+      const min = input.min === ''
+        ? -Infinity
+        : Number(input.min);
+
+      const max = input.max === ''
+        ? Infinity
+        : Number(input.max);
+
+      const value = Math.max(
+        min,
+        Math.min(
+          max,
+          Number(input.value || 0) +
+          direction * step
+        )
+      );
+
+      const places =
+        (String(step).split('.')[1] || '').length;
+
+      input.value =
+        Number(value.toFixed(places));
+
+      input.dispatchEvent(
+        new Event('input', {bubbles:true})
+      );
+    }
+
+    /* CLINICAL CHOICE BUTTONS */
+
+    const pressed =
+      e.target.closest('[data-value]');
+
+    if (pressed) {
+
+      const group =
+        pressed.closest('[data-choice]');
+
+      selectChoice(
+        group,
+        pressed.dataset.value
+      );
+
+      form.elements[
+        group.dataset.choice
+      ].dispatchEvent(
+        new Event('change', {bubbles:true})
+      );
+    }
+  });
+
+  /* BSA CALCULATION */
+
+  function updateBsa() {
+
+    const h =
+      Number(form.elements.height.value);
+
+    const w =
+      Number(form.elements.weight.value);
+
+    const bsa = h > 0 && w > 0
+      ? Math.sqrt(h*w/3600)
+      : NaN;
+
+    document.getElementById('bsa')
+      .textContent =
+        'Estimated BSA: ' +
+        (
+          Number.isFinite(bsa)
+            ? bsa.toFixed(3) + ' m²'
+            : '—'
+        );
+  }
+
+  /* SLIDER SYNCHRONISATION */
+
+  form.querySelectorAll('[data-slider]')
+    .forEach(slider => {
+
+      const numberInput =
+        form.elements[
+          slider.dataset.slider
+        ];
+
+      slider.addEventListener('input', () => {
+
+        numberInput.value = slider.value;
+
+        numberInput.dispatchEvent(
+          new Event('input', {bubbles:true})
+        );
+      });
+
+      numberInput.addEventListener('input', () => {
+
+        if (numberInput.value !== '') {
+          slider.value = numberInput.value;
+        }
+
+        updateBsa();
+      });
+    });
+
+  updateBsa();
+
+  /* FOUR-DIGIT CR */
+
+  const cr = form.elements.demoId;
+
+  cr.addEventListener('input', () => {
+    cr.value = cr.value
+      .replace(/\D/g,'')
+      .slice(0,4);
+  });
+
+  /* INVALIDATE OLD RESULTS */
+
+  function invalidate(event) {
+
+    version++;
+
+    lastInput = null;
+    saved = false;
+
+    result.style.display = 'none';
+    saveButton.disabled = true;
+    saveButton.hidden = true;
+    saveState.textContent = '';
+    saveState.classList.remove('unsaved');
+    message.textContent = '';
+
+  }
+
+  form.addEventListener('input', invalidate);
+  form.addEventListener('change', invalidate);
+
+  /* FORM VALIDATION */
+
+  function validate() {
+
+    for (
+      const el
+      of form.querySelectorAll('input')
+    ) {
+
+      if (
+        el.type === 'range' ||
+        el.type === 'hidden' ||
+        el.type === 'checkbox'
+      ) continue;
+
+      if (!el.checkValidity()) {
+
+        showTab(
+          Number(
+            el.closest('[data-page]')
+              .dataset.page
+          )
+        );
+
+        message.textContent =
+          'Please correct the highlighted field.';
+
+        el.focus();
+        el.reportValidity();
+
+        return false;
+      }
+    }
+
+    for (
+      const group
+      of form.querySelectorAll('[data-choice]')
+    ) {
+
+      if (
+        !form.elements[
+          group.dataset.choice
+        ].value
+      ) {
+
+        showTab(
+          Number(
+            group.closest('[data-page]')
+              .dataset.page
+          )
+        );
+
+        group.querySelector('button').focus();
+
+        message.textContent =
+          'Please select all clinical answers.';
+
+        return false;
+      }
+    }
+
+
+    return true;
+  }
+
+  /* DISPLAY RESULT */
+
+  function render(payload, submitted) {
+    const r = payload && payload.assessment;
+    busy = false;
+    calculateButton.disabled = false;
+
+    if (submitted !== version) {
+      message.textContent = 'Inputs changed. Calculate again.';
+      return;
+    }
+
+    if (!r || typeof r.hardStop !== 'boolean' ||
+        !Array.isArray(r.stopReasons)) {
+      result.style.display = 'none';
+      saveButton.disabled = true;
+      message.textContent =
+        'Backend mismatch: install the v5 Code.gs with hard-stop support.';
+      return;
+    }
+
+    result.style.display = 'block';
+    saved = !!payload.saved;
+    saveButton.disabled = saved;
+    saveButton.hidden = saved;
+    saveState.classList.toggle('unsaved', !saved);
+    if (saved) {
+      const when = payload.savedAt ? new Date(payload.savedAt).toLocaleString() : 'now';
+      saveState.textContent =
+        'Saved automatically • CR ' + lastInput.demoId + ' • ' + when;
+    } else {
+      saveState.textContent =
+        'NOT SAVED — ' + (payload.saveError || 'Storage error') +
+        '. Use Retry save.';
+    }
+
+    // HARD STOP: suppress ALL numerical dose suggestions and reference doses.
+    stopBox.hidden = !r.hardStop;
+    stopReasons.replaceChildren();
+    if (r.hardStop) {
+      (r.stopReasons || []).forEach(reason => {
+        const line = document.createElement('div');
+        line.textContent = '• ' + reason;
+        stopReasons.appendChild(line);
+      });
+    }
+
+    const lines = [
+      'CR: ' + lastInput.demoId,
+      'Status: ' + r.status,
+      'BSA: ' + r.bsa + ' m²'
+    ];
+
+    if (!r.hardStop && r.candidate) {
+      lines.push('Reference 6-MP: ' + r.ref6 + ' mg/day');
+      lines.push('Reference MTX: ' + r.refM + ' mg/week');
+      lines.push('UNVALIDATED DOSE CANDIDATE — CLINICIAN REVIEW');
+      lines.push('6-MP: ' + r.candidate.mpDaily + ' mg/day');
+      lines.push('MTX: ' + r.candidate.mtxWeekly + ' mg/week');
+      lines.push('Change: ' + r.candidate.changePercent + '%');
+    } else {
+      lines.push('NO AUTOMATED DOSE SUGGESTION. Clinician review required.');
+    }
+
+    lines.push('ASSESSMENT ONLY — NOT AN AUTHORISED PRESCRIPTION.');
+    output.textContent = lines.join('\n');
+
+    const ul = document.getElementById('warnings');
+    ul.replaceChildren();
+    (r.warnings || []).forEach(w => {
+      const li = document.createElement('li');
+      li.textContent = w;
+      ul.appendChild(li);
+    });
+
+    message.textContent = r.hardStop
+      ? 'Hard stop — automated dose suggestion blocked.'
+      : 'Assessment complete.';
+    if (!saved) message.textContent += ' AUTOSAVE FAILED — NOT SAVED.';
+  }
+
+  /* ERROR HANDLING */
+
+  function error(e, input, seq) {
+    busy = false;
+    calculateButton.disabled = false;
+    if (seq !== version) return;
+    const detail = (e && e.message) || String(e);
+    message.textContent = 'AUTOSAVE FAILED — NOT SAVED: ' +
+      detail + '. Fetching safety assessment...';
+    // A save failure must not hide toxicity findings.
+    google.script.run
+      .withSuccessHandler(r => render({
+        assessment: r, saved: false, saveError: detail
+      }, seq))
+      .withFailureHandler(second => {
+        if (seq !== version) return;
+        message.textContent =
+          'Assessment and save unavailable — NOT SAVED: ' +
+          ((second && second.message) || String(second));
+      })
+      .assessCase(input);
+  }
+
+  /* CALCULATE AND AUTO-SAVE */
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    if (busy || !validate()) return;
+    if (!(window.google && google.script && google.script.run)) {
+      message.textContent = 'Open inside Google Apps Script.';
+      return;
+    }
+
+    const data = Object.fromEntries(new FormData(form).entries());
+    data._entryId =
+      (window.crypto && typeof window.crypto.randomUUID === 'function')
+        ? window.crypto.randomUUID()
+        : (Date.now().toString(36) + '_' +
+           Math.random().toString(36).slice(2) + '_' +
+           Math.random().toString(36).slice(2));
+    lastInput = data;
+    const seq = version;
+
+    result.style.display = 'none';
+    saveButton.disabled = true;
+    saveButton.hidden = true;
+    calculateButton.disabled = true;
+    busy = true;
+    message.textContent = 'Calculating and saving assessment...';
+
+    google.script.run
+      .withSuccessHandler(payload => render(payload, seq))
+      .withFailureHandler(err => error(err, data, seq))
+      .assessAndSave(data);
+  });
+
+    /* RESET */
+
+  document.getElementById('reset')
+    .addEventListener('click', () => {
+
+      form.reset();
+
+      form.querySelectorAll('[data-slider]')
+        .forEach(s => {
+
+          s.value =
+            form.elements[
+              s.dataset.slider
+            ].value;
+        });
+
+      // Restore all green defaults
+      applyDefaultChoices();
+
+      updateBsa();
+
+      invalidate();
+
+      showTab(0);
+    });
+
+  /* MANUAL RETRY ONLY AFTER AUTO-SAVE FAILURE */
+
+  saveButton.addEventListener('click', () => {
+    if (!lastInput || busy || saveBusy || saved) return;
+    const input = Object.assign({}, lastInput);
+    const seq = version;
+    saveBusy = true;
+    saveButton.disabled = true;
+    message.textContent = 'Retrying save...';
+
+    google.script.run
+      .withSuccessHandler(text => {
+        saveBusy = false;
+        if (seq !== version) return;
+        saved = true;
+        saveButton.hidden = true;
+        saveState.classList.remove('unsaved');
+        saveState.textContent = 'Saved successfully • CR ' + input.demoId;
+        message.textContent = text;
+      })
+      .withFailureHandler(err => {
+        saveBusy = false;
+        if (seq !== version) return;
+        saveButton.disabled = false;
+        saveButton.hidden = false;
+        saveState.classList.add('unsaved');
+        saveState.textContent =
+          'NOT SAVED — ' + ((err && err.message) || String(err)) + '. Retry save.';
+        message.textContent = 'Save failed — NOT SAVED.';
+      })
+      .saveAssessment(input);
+  });
+
+    /* PRINT */
+
+  document.getElementById('print')
+    .addEventListener('click', () => {
+      window.print();
+    });
+
+})();
+</script>
+
+</body>
+</html>
