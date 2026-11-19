@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -38,9 +37,15 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: linear-gradient(180deg, #f8fafc 0%, var(--canvas) 45%, #f1f4f8 100%);
+  background: linear-gradient(
+    180deg,
+    #f8fafc 0%,
+    var(--canvas) 45%,
+    #f1f4f8 100%
+  );
   color: var(--ink);
-  font: 14.5px/1.46 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font: 14.5px/1.46 -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
   letter-spacing: -.006em;
   -webkit-font-smoothing: antialiased;
 }
@@ -49,10 +54,12 @@ main {
   width: 100%;
   max-width: 580px;
   margin: 0 auto;
-  padding: 18px 16px max(28px, env(safe-area-inset-bottom));
+  padding: 18px 16px
+    max(28px, env(safe-area-inset-bottom));
 }
 
-/* Restrained, spacious heading */
+/* MINIMAL HEADER */
+
 header {
   padding: 12px 5px 16px;
   color: var(--ink);
@@ -76,7 +83,9 @@ header::after {
   height: 3px;
   margin-top: 13px;
   border-radius: 99px;
-  background: linear-gradient(90deg, #9b753b, #d8b978);
+  background: linear-gradient(
+    90deg, #9b753b, #d8b978
+  );
 }
 
 h2 {
@@ -88,17 +97,20 @@ h2 {
   font-weight: 725;
 }
 
-/* iOS-style segmented navigation, without altering tab logic */
+/* iOS-STYLE SEGMENTED TABS */
+
 .tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
   gap: 3px;
   padding: 5px;
   margin: 0 0 14px;
   background: #e9edf2;
   border: 1px solid #e2e8ef;
   border-radius: 15px;
-  box-shadow: inset 0 1px 2px rgba(23,48,70,.035);
+  box-shadow:
+    inset 0 1px 2px rgba(23,48,70,.035);
 }
 
 .tab {
@@ -116,26 +128,36 @@ h2 {
   line-height: 1.15;
   letter-spacing: -.018em;
   white-space: nowrap;
-  transition: background .16s ease, box-shadow .16s ease, color .16s ease;
+  transition:
+    background .16s ease,
+    box-shadow .16s ease,
+    color .16s ease;
 }
 
 .tab.active {
   color: #194261;
   background: var(--surface);
-  box-shadow: 0 2px 7px rgba(20,45,67,.085), 0 1px 1px rgba(20,45,67,.05);
+  box-shadow:
+    0 2px 7px rgba(20,45,67,.085),
+    0 1px 1px rgba(20,45,67,.05);
 }
 
-/* A single proportionate card per tab */
+/* PREMIUM CARDS */
+
 section {
   margin: 0 0 14px;
   padding: 23px 22px 19px;
   background: var(--surface);
   border: 1px solid var(--stroke);
   border-radius: 21px;
-  box-shadow: 0 9px 30px rgba(32,52,73,.045), 0 2px 6px rgba(32,52,73,.02);
+  box-shadow:
+    0 9px 30px rgba(32,52,73,.045),
+    0 2px 6px rgba(32,52,73,.02);
 }
 
-section[hidden] { display: none !important; }
+section[hidden] {
+  display: none !important;
+}
 
 .stack {
   display: flex;
@@ -163,7 +185,8 @@ section[hidden] { display: none !important; }
   line-height: 1.5;
 }
 
-/* Fields — consistent dimensions, soft neutral borders */
+/* INPUTS */
+
 input:not([type=range]):not([type=checkbox]):not([type=hidden]) {
   appearance: none;
   width: 100%;
@@ -175,9 +198,13 @@ input:not([type=range]):not([type=checkbox]):not([type=hidden]) {
   outline: none;
   background: #fbfcfe;
   color: var(--ink);
-  font: 620 16px/1.25 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font: 620 16px/1.25
+    -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
   font-variant-numeric: tabular-nums;
-  transition: border-color .15s ease, box-shadow .15s ease;
+  transition:
+    border-color .15s ease,
+    box-shadow .15s ease;
 }
 
 input:not([type=range]):not([type=checkbox]):not([type=hidden]):focus {
@@ -185,15 +212,20 @@ input:not([type=range]):not([type=checkbox]):not([type=hidden]):focus {
   box-shadow: 0 0 0 3px var(--ring);
 }
 
-/* Number stepper buttons already exist; hide the browser's extra arrows */
+/* REMOVE EXTRA NUMBER SPINNERS */
+
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-input[type=number] { -moz-appearance: textfield; }
 
-/* Body-measurement sliders */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* BODY MEASUREMENT SLIDERS */
+
 input[type=range] {
   width: 100%;
   min-width: 0;
@@ -223,10 +255,14 @@ input[type=range] {
   text-align: center;
 }
 
-/* Compact numeric stepper — matching vertical proportions */
+/* PROPORTIONATE +/- BUTTONS */
+
 .stepper {
   display: grid;
-  grid-template-columns: minmax(48px,.9fr) minmax(96px,1.58fr) minmax(48px,.9fr);
+  grid-template-columns:
+    minmax(48px,.9fr)
+    minmax(96px,1.58fr)
+    minmax(48px,.9fr);
   align-items: center;
   gap: 10px;
   width: 100%;
@@ -247,7 +283,8 @@ input[type=range] {
   line-height: 1.2;
   letter-spacing: -.035em;
   text-align: center;
-  box-shadow: 0 2px 5px rgba(38,65,90,.035);
+  box-shadow:
+    0 2px 5px rgba(38,65,90,.035);
 }
 
 .stepper button {
@@ -265,24 +302,32 @@ input[type=range] {
   font-size: 36px;
   font-weight: 480;
   line-height: 1;
-  transition: background .15s ease, transform .12s ease;
+  transition:
+    background .15s ease,
+    transform .12s ease;
 }
 
-.stepper button:active { background: #d9eaf7; }
+.stepper button:active {
+  background: #d9eaf7;
+}
 
-/* Keep the lab labels visually aligned with the centered controls */
 .field:has(> .stepper) > .field-label {
   text-align: center;
 }
 
-/* Two- and three-way pill-like choice buttons */
+/* YES/NO AND GENETIC CHOICE BUTTONS */
+
 .choices {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0,1fr));
+  grid-template-columns:
+    repeat(2, minmax(0,1fr));
   gap: 9px;
 }
 
-.choices.three { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.choices.three {
+  grid-template-columns:
+    repeat(3, minmax(0,1fr));
+}
 
 .choice {
   appearance: none;
@@ -297,7 +342,10 @@ input[type=range] {
   font-size: 13px;
   font-weight: 670;
   letter-spacing: -.01em;
-  transition: background .15s ease, color .15s ease, border-color .15s ease;
+  transition:
+    background .15s ease,
+    color .15s ease,
+    border-color .15s ease;
 }
 
 .choice.selected.good {
@@ -318,14 +366,22 @@ input[type=range] {
   color: #926c27;
 }
 
+/* BUTTONS */
+
 button {
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
-button:active { transform: scale(.987); }
-button:disabled { opacity: .48; cursor: not-allowed; }
+button:active {
+  transform: scale(.987);
+}
+
+button:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+}
 
 button:focus-visible,
 input[type=range]:focus-visible {
@@ -333,7 +389,8 @@ input[type=range]:focus-visible {
   outline-offset: 2px;
 }
 
-/* Clear hierarchy: filled primary action, quiet secondary action */
+/* PRIMARY AND SECONDARY ACTIONS */
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -353,7 +410,8 @@ input[type=range]:focus-visible {
   font-size: 13px;
   font-weight: 720;
   letter-spacing: -.012em;
-  box-shadow: 0 3px 9px rgba(24,92,145,.1);
+  box-shadow:
+    0 3px 9px rgba(24,92,145,.1);
 }
 
 .action.secondary {
@@ -363,9 +421,12 @@ input[type=range]:focus-visible {
   color: #49657d;
 }
 
-.action[hidden] { display: none !important; }
+.action[hidden] {
+  display: none !important;
+}
 
-/* Small BSA information tile */
+/* BSA CARD */
+
 .bsa {
   padding: 13px 15px;
   border: 1px solid #e0ebf4;
@@ -377,7 +438,8 @@ input[type=range]:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
-/* Toxicity remains unmistakable despite a subdued overall visual style */
+/* TOXICITY HARD STOP */
+
 .stop-alert {
   margin-bottom: 14px;
   padding: 15px;
@@ -389,9 +451,24 @@ input[type=range]:focus-visible {
   font-size: 13px;
   line-height: 1.6;
 }
-.stop-alert[hidden] { display: none !important; }
-.stop-alert strong { display: block; margin-bottom: 8px; font-weight: 780; }
-.stop-alert small { display: block; margin-top: 9px; color: #73424b; }
+
+.stop-alert[hidden] {
+  display: none !important;
+}
+
+.stop-alert strong {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 780;
+}
+
+.stop-alert small {
+  display: block;
+  margin-top: 9px;
+  color: #73424b;
+}
+
+/* RESULTS */
 
 .summary {
   padding: 15px;
@@ -406,7 +483,9 @@ input[type=range]:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
-#result { display: none; }
+#result {
+  display: none;
+}
 
 #message {
   margin: 9px 2px 0;
@@ -417,7 +496,9 @@ input[type=range]:focus-visible {
   line-height: 1.5;
 }
 
-#message:empty { display: none; }
+#message:empty {
+  display: none;
+}
 
 .save-state {
   margin-top: 13px;
@@ -427,9 +508,12 @@ input[type=range]:focus-visible {
   line-height: 1.5;
 }
 
-.save-state.unsaved { color: var(--red); }
+.save-state.unsaved {
+  color: var(--red);
+}
 
-/* Small signature in muted deep gold */
+/* GOLDEN DEVELOPER CREDIT */
+
 .dev-credit {
   margin-top: 26px;
   padding-top: 13px;
@@ -442,20 +526,179 @@ input[type=range]:focus-visible {
   letter-spacing: .015em;
 }
 
-/* Balanced at standard phone and narrow Apps Script sidebar widths */
+/* MOBILE LAYOUT */
 
-/* Phone web-app: occupy the complete available screen width.
-   Browser address/status bars are controlled by the browser, not this CSS. */
-@media (max-width: 767px) {
-  html, body {
+@media (max-width: 430px) {
+  main {
+    padding: 12px 9px
+      max(22px, env(safe-area-inset-bottom));
+  }
+
+  header {
+    padding: 12px 7px 15px;
+  }
+
+  h1 {
+    font-size: 20px;
+  }
+
+  section {
+    padding: 20px 16px 18px;
+    border-radius: 19px;
+  }
+
+  h2 {
+    font-size: 16.5px;
+    margin-bottom: 19px;
+  }
+
+  .stack {
+    gap: 20px;
+  }
+
+  .tabs {
+    gap: 2px;
+    padding: 4px;
+    border-radius: 13px;
+  }
+
+  .tab {
+    min-height: 42px;
+    padding: 7px 1px;
+    font-size: 10.5px;
+  }
+
+  .stepper {
+    max-width: 288px;
+    gap: 8px;
+  }
+
+  .stepper button {
+    height: 58px;
+    min-height: 58px;
+    font-size: 35px;
+  }
+
+  .stepper input[type=number] {
+    height: 52px;
+    font-size: 20px;
+  }
+
+  .rangeLine {
+    gap: 9px;
+  }
+
+  .rangeLine input[type=number] {
+    flex-basis: 76px;
+    width: 76px;
+  }
+
+  .choice {
+    min-height: 49px;
+    font-size: 12.5px;
+  }
+
+  .actions {
+    gap: 8px;
+    margin-top: 22px;
+  }
+
+  .action {
+    min-height: 47px;
+    padding: 11px 10px;
+    font-size: 12.5px;
+  }
+}
+
+@media (max-width: 320px) {
+  main {
+    padding-inline: 6px;
+  }
+
+  section {
+    padding: 18px 12px;
+  }
+
+  .tab {
+    font-size: 10px;
+  }
+
+  .stepper {
+    gap: 6px;
+    grid-template-columns:
+      minmax(45px,.8fr)
+      minmax(86px,1.6fr)
+      minmax(45px,.8fr);
+  }
+
+  .stepper button {
+    height: 55px;
+    min-height: 55px;
+    font-size: 33px;
+  }
+
+  .stepper input[type=number] {
+    font-size: 19px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  main {
+    max-width: none;
+    padding: 0;
+  }
+
+  header,
+  .tabs,
+  form,
+  #message,
+  .actions {
+    display: none !important;
+  }
+
+  #result {
+    display: block !important;
+    border: none;
+    box-shadow: none;
+  }
+
+  .save-state {
+    color: #263c4c;
+  }
+}
+/* ======================================
+   PGICH ALL — MOBILE FULL-SCREEN PATCH
+   iPhone + Android
+   ====================================== */
+
+@media screen and (max-width: 767px) {
+
+  html,
+  body {
     width: 100%;
     min-height: 100%;
     margin: 0;
-    overflow-x: clip;
+    padding: 0;
+    overflow-x: hidden;
   }
+
   body {
     background: #f5f7fa;
   }
+
   main {
     width: 100%;
     max-width: none;
@@ -464,10 +707,11 @@ input[type=range]:focus-visible {
     margin: 0;
     padding:
       max(10px, env(safe-area-inset-top))
-      max(10px, env(safe-area-inset-right))
+      max(7px, env(safe-area-inset-right))
       max(22px, env(safe-area-inset-bottom))
-      max(10px, env(safe-area-inset-left));
+      max(7px, env(safe-area-inset-left));
   }
+
   header,
   .tabs,
   form,
@@ -477,58 +721,300 @@ input[type=range]:focus-visible {
     max-width: none;
     min-width: 0;
   }
+
   header {
-    padding: 14px 6px 18px;
+    padding: 14px 8px 18px;
   }
+
   section {
+    padding: 20px 16px;
     border-radius: 18px;
   }
-  .stack, .field, .rangeLine {
+
+  .stack,
+  .field,
+  .rangeLine {
     min-width: 0;
   }
+
   .tabs {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr));
   }
 }
 
+  /* Do not let sliders and tab text force horizontal scrolling. */
+  @media screen and (max-width: 767px) {
+    .rangeLine { min-width: 0; }
+    .rangeLine input[type=range] { min-width: 0; }
+    .tab { overflow: hidden; text-overflow: ellipsis; }
+    .stepper { max-width: min(100%, 302px); }
+  }
+
+/* -------------------------------------------
+   PREMIUM REPORT + FINAL-PAGE ONLY FOOTER v7
+   ------------------------------------------- */
+header::after { display: none !important; }
+
+.dev-credit {
+  margin: 17px auto 1px;
+  padding: 8px 0 1px;
+  border: 0;
+  background: transparent;
+  text-align: center;
+  font: normal 500 10px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: .015em;
+  color: #8793a1;
+}
+
+/* Large, obvious primary action on last step */
+#calculate {
+  display: block;
+  width: 100%;
+  flex: 1 0 100%;
+  min-height: 64px;
+  padding: 18px 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #237fb9, #12639b);
+  color: white;
+  font-size: 17px;
+  font-weight: 750;
+  letter-spacing: -.02em;
+  box-shadow: 0 6px 18px rgba(22,106,166,.18);
+}
+#calculate:active { background: #125b91; }
+#reset { flex: 1 0 100%; }
+
+#result {
+  scroll-margin-top: 12px;
+  padding: 23px 20px 21px;
+  border-radius: 20px;
+  border-color: #dce6ee;
+}
+#result > h2 {
+  margin: 0 0 17px;
+  font-size: 21px;
+  font-weight: 760;
+}
+.report-eyebrow {
+  margin: 0 0 5px;
+  color: #6b8193;
+  font-size: 10px;
+  font-weight: 780;
+  letter-spacing: .135em;
+}
+.report-loading {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+  padding: 19px 15px;
+  border: 1px solid #dfebf5;
+  background: #f4f8fc;
+  border-radius: 14px;
+  color: #456b86;
+  font-size: 13px;
+  font-weight: 670;
+}
+.report-loading[hidden], .summary[hidden] { display: none !important; }
+.report-spinner {
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
+  border: 2px solid #b8d6e9;
+  border-top-color: #176eaa;
+  border-radius: 50%;
+  animation: report-spin .75s linear infinite;
+}
+@keyframes report-spin { to { transform: rotate(360deg); } }
+
+#result .summary {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  white-space: normal;
+  line-height: 1.4;
+}
+.report-hero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 11px;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 18px 17px;
+  background: linear-gradient(135deg, #f1f7fb 0%, #f9fbfd 100%);
+  border: 1px solid #dceaf3;
+  border-radius: 16px;
+}
+.report-label {
+  display: block;
+  margin-bottom: 5px;
+  color: #728294;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .01em;
+}
+.report-strong {
+  display: block;
+  color: #214661;
+  font-size: 17px;
+  font-weight: 760;
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
+}
+.report-cr {
+  color: #38566c;
+  border: 1px solid #dbe6ee;
+  background: #fff;
+  border-radius: 11px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+.report-hero.critical {
+  border-color: #eabec2;
+  background: #fff5f5;
+}
+.report-hero.critical .report-strong { color: #a32935; }
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 10px;
+}
+.report-tile {
+  min-width: 0;
+  padding: 14px 13px;
+  background: #f8fafc;
+  border: 1px solid #e6edf3;
+  border-radius: 13px;
+}
+.report-value {
+  color: #253f54;
+  font-size: 19px;
+  font-weight: 760;
+  line-height: 1.28;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.report-value span {
+  color: #708193;
+  font-size: 11px;
+  font-weight: 650;
+}
+.report-dose {
+  padding: 15px 14px;
+  border: 1px solid #dae8f0;
+  border-radius: 15px;
+  background: #f4f8fb;
+}
+.report-dose-title {
+  margin: 0 0 12px;
+  color: #335d7b;
+  font-size: 13px;
+  font-weight: 760;
+}
+.report-dose .report-tile {
+  background: #fff;
+  border-color: #e2ebf2;
+}
+.report-disclaimer {
+  margin: 1px 0 0;
+  padding: 11px 12px;
+  border-radius: 11px;
+  background: #f6f7f9;
+  color: #667685;
+  font-size: 11px;
+  font-weight: 540;
+  line-height: 1.5;
+}
+.report-no-dose {
+  padding: 13px 14px;
+  border-radius: 12px;
+  border: 1px solid #e7e8ed;
+  background: #f9f9fa;
+  color: #455767;
+  font-size: 12px;
+  font-weight: 650;
+}
+#result #warnings { margin: 12px 0 0; padding: 0 0 0 18px; color: #885b2c; font-size: 12px; line-height: 1.55; }
+#result #warnings:empty { display:none; }
+#result .save-state {
+  padding: 11px 12px;
+  border: 1px solid #d9eadd;
+  border-radius: 11px;
+  background: #f2faf4;
+  font-size: 12px;
+}
+#result .save-state.unsaved { border-color:#eed4d6; background:#fff4f4; }
+#result .save-state.pending { border-color:#dce8f2; background:#f3f8fc; color:#59758b; }
+
 @media (max-width: 430px) {
-  main { padding: max(10px, env(safe-area-inset-top)) max(7px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(7px, env(safe-area-inset-left)); }
-  header { padding: 12px 7px 15px; }
-  h1 { font-size: 20px; }
-  section { padding: 20px 16px 18px; border-radius: 19px; }
-  h2 { font-size: 16.5px; margin-bottom: 19px; }
-  .stack { gap: 20px; }
-  .tabs { gap: 2px; padding: 4px; border-radius: 13px; }
-  .tab { min-height: 42px; padding: 7px 1px; font-size: 10.5px; }
-  .stepper { max-width: 288px; gap: 8px; }
-  .stepper button { height: 58px; min-height: 58px; font-size: 35px; }
-  .stepper input[type=number] { height: 52px; font-size: 20px; }
-  .rangeLine { gap: 9px; }
-  .rangeLine input[type=number] { flex-basis: 76px; width: 76px; }
-  .choice { min-height: 49px; font-size: 12.5px; }
-  .actions { gap: 8px; margin-top: 22px; }
-  .action { min-height: 47px; padding: 11px 10px; font-size: 12.5px; }
+  #calculate { min-height: 66px; font-size: 17px; }
+  #result { padding: 20px 15px 18px; }
+  .report-hero { padding: 15px 13px; }
+  .report-grid { gap: 8px; }
+  .report-tile { padding: 12px 10px; }
+  .report-value { font-size: 17px; }
 }
-
-@media (max-width: 320px) {
-  main { padding-inline: 6px; }
-  section { padding: 18px 12px; }
-  .tab { font-size: 10px; }
-  .stepper { gap: 6px; grid-template-columns: minmax(45px,.8fr) minmax(86px,1.6fr) minmax(45px,.8fr); }
-  .stepper button { height: 55px; min-height: 55px; font-size: 33px; }
-  .stepper input[type=number] { font-size: 19px; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  .report-spinner { animation: none; }
 }
 
-@media print {
-  body { background: #fff; }
-  main { max-width: none; padding: 0; }
-  header, .tabs, form, #message, .actions { display: none !important; }
-  #result { display: block !important; border: none; box-shadow: none; }
-  .save-state { color: #263c4c; }
+
+/* Compact premium gold title — no banner, badge, overline or tagline. */
+header.app-header {
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 13px 4px 11px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+}
+
+header.app-header::after {
+  display: none !important;
+  content: none !important;
+}
+
+header.app-header h1 {
+  margin: 0;
+  color: #8f6a34;
+  font-size: clamp(20px, 5vw, 24px);
+  font-weight: 740;
+  letter-spacing: -.034em;
+  line-height: 1.28;
+}
+
+.dose-prefill-note {
+  margin: -8px 0 0;
+  color: #7a8794;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+/* Tiny centred signature, Clinical tab only; regular upright text. */
+.dev-credit {
+  margin: 18px 0 0;
+  padding: 9px 0 1px;
+  border: 0;
+  text-align: center;
+  color: #7f8994;
+  font: normal 500 10px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: .012em;
+}
+
+@media screen and (max-width: 767px) {
+  header.app-header {
+    padding: 12px 5px 10px;
+    margin-bottom: 11px;
+  }
+  header.app-header h1 {
+    font-size: clamp(19px, 5.2vw, 22px);
+  }
 }
 </style>
 </head>
@@ -536,7 +1022,7 @@ input[type=range]:focus-visible {
 <body>
 <main>
 
-<header>
+<header class="app-header">
   <h1>PGICH ALL Maintenance Calculator</h1>
 </header>
 
@@ -549,33 +1035,58 @@ input[type=range]:focus-visible {
 <p id="message" role="status"
   aria-live="polite"></p>
 
-<section id="result">
+<section id="result" aria-label="Assessment report">
+  <div class="report-eyebrow">ASSESSMENT REPORT</div>
   <h2>Assessment Summary</h2>
 
-  <div id="stopBox" class="stop-alert" hidden role="alert">
-    <strong>HARD STOP — AUTOMATED DOSE SUGGESTION BLOCKED</strong>
-    <div id="stopReasons"></div>
-    <small>This alert blocks the software's dose suggestion; treatment decisions require the oncologist.</small>
+  <div id="resultLoading" class="report-loading" hidden role="status">
+    <span class="report-spinner" aria-hidden="true"></span>
+    <span id="loadingText">Preparing assessment…</span>
   </div>
-  <div id="output" class="summary"></div>
-  <div id="saveState" class="save-state" role="status" aria-live="polite"></div>
+
+  <div id="stopBox"
+    class="stop-alert"
+    hidden
+    role="alert">
+
+    <strong>
+      HARD STOP — AUTOMATED DOSE SUGGESTION BLOCKED
+    </strong>
+
+    <div id="stopReasons"></div>
+
+    <small>
+      This alert blocks the software's dose
+      suggestion; treatment decisions require
+      the oncologist.
+    </small>
+  </div>
+
+  <div id="output" class="summary" hidden></div>
+
+  <div id="saveState"
+    class="save-state"
+    role="status"
+    aria-live="polite">
+  </div>
+
   <ul id="warnings"></ul>
 
   <div class="actions">
-    <button id="save" class="action secondary"
-      type="button" hidden disabled>
+    <button id="save"
+      class="action secondary"
+      type="button"
+      hidden disabled>
       Retry save
     </button>
 
-    <button id="print" class="action secondary"
+    <button id="print"
+      class="action secondary"
       type="button">
       Print assessment
     </button>
   </div>
 
-  <footer class="dev-credit">
-    Developed by — Dr Aman Singh
-  </footer>
 </section>
 
 </main>
@@ -593,10 +1104,13 @@ input[type=range]:focus-visible {
   const saveState = document.getElementById('saveState');
   const stopBox = document.getElementById('stopBox');
   const stopReasons = document.getElementById('stopReasons');
+  const resultLoading = document.getElementById('resultLoading');
+  const loadingText = document.getElementById('loadingText');
+  const warningsBox = document.getElementById('warnings');
 
   const footer = `
-    <footer class="dev-credit">
-      Developed by — Dr Aman Singh
+    <footer class="dev-credit" aria-label="Developer credit">
+      Developed by Dr Aman Singh
     </footer>
   `;
 
@@ -609,31 +1123,31 @@ input[type=range]:focus-visible {
   saveButton.disabled = true;
   saveButton.hidden = true;
 
-  /* DEFAULT HEALTHY/NORMAL SELECTIONS */
+  /* DEFAULT PRESELECTED VALUES */
 
-  // Prefilled UI values only.
-  // They are not clinically verified results.
+  // These are demo defaults.
+  // They are NOT verified patient findings.
 
   const defaults = {
-    rising:'no',
-    fever:'no',
-    infection:'no',
-    jaundice:'no',
-    mucositis:'no',
-    tpmt:'normal',
-    nudt15:'normal',
-    adherence:'good'
+    rising: 'no',
+    fever: 'no',
+    infection: 'no',
+    jaundice: 'no',
+    mucositis: 'no',
+    tpmt: 'normal',
+    nudt15: 'normal',
+    adherence: 'good'
   };
 
   const yesno = [
-    ['yes','YES','bad'],
-    ['no','NO','good']
+    ['yes', 'YES', 'bad'],
+    ['no', 'NO', 'good']
   ];
 
   const genetics = [
-    ['normal','Normal','good'],
-    ['variant','Variant','bad'],
-    ['unknown','Unknown','neutral']
+    ['normal', 'Normal', 'good'],
+    ['variant', 'Variant', 'bad'],
+    ['unknown', 'Unknown', 'neutral']
   ];
 
   /* FIELD GENERATORS */
@@ -648,11 +1162,10 @@ input[type=range]:focus-visible {
   }
 
   function slider(
-    name,label,min,max,step,val
+    name, label, min, max, step, val
   ) {
     return field(label, `
       <div class="rangeLine">
-
         <input type="range"
           data-slider="${name}"
           min="${min}"
@@ -673,7 +1186,7 @@ input[type=range]:focus-visible {
     `);
   }
 
-  function plain(name,label,val) {
+  function plain(name, label, val) {
     return field(label, `
       <input name="${name}"
         type="number"
@@ -687,8 +1200,8 @@ input[type=range]:focus-visible {
   }
 
   function stepper(
-    name,label,val,step,max,
-    required=true,min=0
+    name, label, val, step, max,
+    required = true, min = 0
   ) {
     return field(label, `
       <div class="stepper" data-step="${step}">
@@ -719,7 +1232,7 @@ input[type=range]:focus-visible {
     `);
   }
 
-  function choice(name,label,items) {
+  function choice(name, label, items) {
     const buttons = items.map(item => `
       <button type="button"
         class="choice ${item[2]}"
@@ -749,22 +1262,21 @@ input[type=range]:focus-visible {
     /* 1. PATIENT */
 
     {
-      title:'Patient Details',
-
-      content:[
+      title: 'Patient Details',
+      content: [
         slider(
-          'age','Age (years)',
-          0,25,0.5,6
+          'age', 'Age (years)',
+          0, 25, 0.5, 6
         ),
 
         slider(
-          'height','Height (cm)',
-          35,230,1,115
+          'height', 'Height (cm)',
+          35, 230, 1, 115
         ),
 
         slider(
-          'weight','Weight (kg)',
-          1,200,0.5,20
+          'weight', 'Weight (kg)',
+          1, 200, 0.5, 20
         ),
 
         `
@@ -776,14 +1288,19 @@ input[type=range]:focus-visible {
         plain(
           'current6',
           'Current 6-MP (mg/day)',
-          12
+          35
         ),
 
         plain(
           'currentM',
           'Current MTX (mg/week)',
-          12
+          20
         ),
+
+        `<p class="dose-prefill-note">
+          Prefilled example values only. Confirm the actual
+          prescribed doses before calculating.
+        </p>`,
 
         field('CR Number (4 digits)', `
           <input name="demoId"
@@ -801,37 +1318,36 @@ input[type=range]:focus-visible {
     /* 2. CBC */
 
     {
-      title:'Complete Blood Count',
-
-      content:[
+      title: 'Complete Blood Count',
+      content: [
         stepper(
-          'wbc','WBC / TLC (/µL)',
-          2500,100,200000
+          'wbc', 'WBC / TLC (/µL)',
+          2500, 100, 200000
         ),
 
         stepper(
-          'anc','ANC (/µL)',
-          1000,100,200000
+          'anc', 'ANC (/µL)',
+          1000, 100, 200000
         ),
 
         stepper(
-          'alc','ALC (/µL)',
-          900,100,200000
+          'alc', 'ALC (/µL)',
+          900, 100, 200000
         ),
 
         stepper(
-          'platelets','Platelets (/µL)',
-          180000,1000,2000000
+          'platelets', 'Platelets (/µL)',
+          180000, 1000, 2000000
         ),
 
         stepper(
-          'prevWbc','Previous WBC (/µL)',
-          2600,100,200000,false
+          'prevWbc', 'Previous WBC (/µL)',
+          2600, 100, 200000, false
         ),
 
         stepper(
-          'prevAnc','Previous ANC (/µL)',
-          1050,100,200000,false
+          'prevAnc', 'Previous ANC (/µL)',
+          1050, 100, 200000, false
         )
       ].join('')
     },
@@ -839,37 +1355,36 @@ input[type=range]:focus-visible {
     /* 3. LFT PANEL */
 
     {
-      title:'LFT Panel',
-
-      content:[
+      title: 'LFT Panel',
+      content: [
         stepper(
           'bilirubin',
           'Total bilirubin (mg/dL)',
-          0.8,0.1,100
+          0.8, 0.1, 100
         ),
 
         stepper(
           'biliULN',
           'Bilirubin ULN (mg/dL)',
-          1,0.1,20,true,0.01
+          1, 0.1, 20, true, 0.01
         ),
 
         stepper(
           'ast',
           'AST / SGOT (U/L)',
-          30,5,20000
+          30, 5, 20000
         ),
 
         stepper(
           'alt',
           'ALT / SGPT (U/L)',
-          30,5,20000
+          30, 5, 20000
         ),
 
         stepper(
           'transULN',
           'AST/ALT ULN (U/L)',
-          40,5,1000,true,1
+          40, 5, 1000, true, 1
         ),
 
         choice(
@@ -883,9 +1398,8 @@ input[type=range]:focus-visible {
     /* 4. CLINICAL */
 
     {
-      title:'Clinical and Safety',
-
-      content:[
+      title: 'Clinical and Safety',
+      content: [
         choice(
           'fever',
           'Fever in last 48 hours?',
@@ -926,9 +1440,9 @@ input[type=range]:focus-visible {
           'adherence',
           'Were all prescribed doses taken?',
           [
-            ['good','YES','good'],
-            ['missed','NO','bad'],
-            ['unknown','Not sure','neutral']
+            ['good', 'YES', 'good'],
+            ['missed', 'NO', 'bad'],
+            ['unknown', 'Not sure', 'neutral']
           ]
         )
       ].join('')
@@ -945,12 +1459,12 @@ input[type=range]:focus-visible {
   ];
 
   tabsBox.innerHTML = tabNames.map(
-    (name,i) => `
+    (name, i) => `
       <button type="button"
         class="tab ${i === 0 ? 'active' : ''}"
         data-tab="${i}"
         aria-selected="${i === 0}">
-        ${i+1}. ${name}
+        ${i + 1}. ${name}
       </button>
     `
   ).join('');
@@ -958,7 +1472,7 @@ input[type=range]:focus-visible {
   /* GENERATE PAGES */
 
   form.innerHTML = pages.map(
-    (page,i) => `
+    (page, i) => `
       <section data-page="${i}"
         ${i === 0 ? '' : 'hidden'}>
 
@@ -973,7 +1487,7 @@ input[type=range]:focus-visible {
           ${i > 0 ? `
             <button type="button"
               class="action secondary"
-              data-go="${i-1}">
+              data-go="${i - 1}">
               ← Previous
             </button>
           ` : ''}
@@ -981,7 +1495,7 @@ input[type=range]:focus-visible {
           ${i < 3 ? `
             <button type="button"
               class="action"
-              data-go="${i+1}">
+              data-go="${i + 1}">
               Next →
             </button>
           ` : `
@@ -999,7 +1513,7 @@ input[type=range]:focus-visible {
           `}
         </div>
 
-        ${footer}
+        ${i === 3 ? footer : ''}
       </section>
     `
   ).join('');
@@ -1018,12 +1532,11 @@ input[type=range]:focus-visible {
   /* TAB NAVIGATION */
 
   function showTab(i) {
-
-    panels.forEach((p,n) => {
+    panels.forEach((p, n) => {
       p.hidden = n !== i;
     });
 
-    tabs.forEach((t,n) => {
+    tabs.forEach((t, n) => {
       t.classList.toggle(
         'active',
         n === i
@@ -1036,16 +1549,14 @@ input[type=range]:focus-visible {
     });
   }
 
-  /* SELECT A CLINICAL BUTTON */
+  /* SELECT CLINICAL BUTTON */
 
-  function selectChoice(group,value) {
-
+  function selectChoice(group, value) {
     form.elements[group.dataset.choice].value =
       value;
 
     group.querySelectorAll('.choice')
       .forEach(button => {
-
         const selected =
           button.dataset.value === value;
 
@@ -1064,29 +1575,25 @@ input[type=range]:focus-visible {
   /* APPLY GREEN DEFAULTS */
 
   function applyDefaultChoices() {
-
     for (
-      const [name,value]
+      const [name, value]
       of Object.entries(defaults)
     ) {
-
       const group = form.querySelector(
         `[data-choice="${name}"]`
       );
 
       if (group) {
-        selectChoice(group,value);
+        selectChoice(group, value);
       }
     }
   }
 
-  // Automatically preselect on opening
   applyDefaultChoices();
 
   /* TAB CLICKS */
 
   tabsBox.addEventListener('click', e => {
-
     const button =
       e.target.closest('[data-tab]');
 
@@ -1098,7 +1605,6 @@ input[type=range]:focus-visible {
   /* FORM BUTTON CLICKS */
 
   form.addEventListener('click', e => {
-
     const go = e.target.closest('[data-go]');
 
     if (go) {
@@ -1110,12 +1616,8 @@ input[type=range]:focus-visible {
     const btn = e.target.closest('[data-delta]');
 
     if (btn) {
-
-      const group =
-        btn.closest('.stepper');
-
-      const input =
-        group.querySelector('input');
+      const group = btn.closest('.stepper');
+      const input = group.querySelector('input');
 
       const step =
         Number(group.dataset.step);
@@ -1147,7 +1649,7 @@ input[type=range]:focus-visible {
         Number(value.toFixed(places));
 
       input.dispatchEvent(
-        new Event('input', {bubbles:true})
+        new Event('input', {bubbles: true})
       );
     }
 
@@ -1157,7 +1659,6 @@ input[type=range]:focus-visible {
       e.target.closest('[data-value]');
 
     if (pressed) {
-
       const group =
         pressed.closest('[data-choice]');
 
@@ -1169,7 +1670,7 @@ input[type=range]:focus-visible {
       form.elements[
         group.dataset.choice
       ].dispatchEvent(
-        new Event('change', {bubbles:true})
+        new Event('change', {bubbles: true})
       );
     }
   });
@@ -1177,7 +1678,6 @@ input[type=range]:focus-visible {
   /* BSA CALCULATION */
 
   function updateBsa() {
-
     const h =
       Number(form.elements.height.value);
 
@@ -1185,7 +1685,7 @@ input[type=range]:focus-visible {
       Number(form.elements.weight.value);
 
     const bsa = h > 0 && w > 0
-      ? Math.sqrt(h*w/3600)
+      ? Math.sqrt(h * w / 3600)
       : NaN;
 
     document.getElementById('bsa')
@@ -1202,23 +1702,20 @@ input[type=range]:focus-visible {
 
   form.querySelectorAll('[data-slider]')
     .forEach(slider => {
-
       const numberInput =
         form.elements[
           slider.dataset.slider
         ];
 
       slider.addEventListener('input', () => {
-
         numberInput.value = slider.value;
 
         numberInput.dispatchEvent(
-          new Event('input', {bubbles:true})
+          new Event('input', {bubbles: true})
         );
       });
 
       numberInput.addEventListener('input', () => {
-
         if (numberInput.value !== '') {
           slider.value = numberInput.value;
         }
@@ -1235,14 +1732,13 @@ input[type=range]:focus-visible {
 
   cr.addEventListener('input', () => {
     cr.value = cr.value
-      .replace(/\D/g,'')
-      .slice(0,4);
+      .replace(/\D/g, '')
+      .slice(0, 4);
   });
 
   /* INVALIDATE OLD RESULTS */
 
-  function invalidate(event) {
-
+  function invalidate() {
     version++;
 
     lastInput = null;
@@ -1251,10 +1747,12 @@ input[type=range]:focus-visible {
     result.style.display = 'none';
     saveButton.disabled = true;
     saveButton.hidden = true;
-    saveState.textContent = '';
-    saveState.classList.remove('unsaved');
-    message.textContent = '';
 
+    saveState.textContent = '';
+    saveState.classList.remove('unsaved', 'pending');
+    resultLoading.hidden = true;
+    output.hidden = true;
+    message.textContent = '';
   }
 
   form.addEventListener('input', invalidate);
@@ -1263,12 +1761,10 @@ input[type=range]:focus-visible {
   /* FORM VALIDATION */
 
   function validate() {
-
     for (
       const el
       of form.querySelectorAll('input')
     ) {
-
       if (
         el.type === 'range' ||
         el.type === 'hidden' ||
@@ -1276,7 +1772,6 @@ input[type=range]:focus-visible {
       ) continue;
 
       if (!el.checkValidity()) {
-
         showTab(
           Number(
             el.closest('[data-page]')
@@ -1298,13 +1793,11 @@ input[type=range]:focus-visible {
       const group
       of form.querySelectorAll('[data-choice]')
     ) {
-
       if (
         !form.elements[
           group.dataset.choice
         ].value
       ) {
-
         showTab(
           Number(
             group.closest('[data-page]')
@@ -1321,179 +1814,259 @@ input[type=range]:focus-visible {
       }
     }
 
-
     return true;
   }
 
-  /* DISPLAY RESULT */
+  /* ASSESSMENT PRESENTATION */
 
-  function render(payload, submitted) {
-    const r = payload && payload.assessment;
-    busy = false;
-    calculateButton.disabled = false;
+  function element(tag, className, value) {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (value !== undefined) el.textContent = String(value);
+    return el;
+  }
 
-    if (submitted !== version) {
-      message.textContent = 'Inputs changed. Calculate again.';
-      return;
-    }
+  function metric(label, value, unit) {
+    const tile = element('div', 'report-tile');
+    tile.appendChild(element('span', 'report-label', label));
+    const val = element('div', 'report-value', value);
+    if (unit) val.appendChild(element('span', '', ' ' + unit));
+    tile.appendChild(val);
+    return tile;
+  }
 
+  function showReport(r, seq, input) {
+    if (seq !== version) return false;
     if (!r || typeof r.hardStop !== 'boolean' ||
         !Array.isArray(r.stopReasons)) {
-      result.style.display = 'none';
-      saveButton.disabled = true;
-      message.textContent =
-        'Backend mismatch: install the v5 Code.gs with hard-stop support.';
-      return;
+      reportError('Assessment response not recognised. Check that the latest Code.gs is deployed.');
+      return false;
     }
 
     result.style.display = 'block';
-    saved = !!payload.saved;
-    saveButton.disabled = saved;
-    saveButton.hidden = saved;
-    saveState.classList.toggle('unsaved', !saved);
-    if (saved) {
-      const when = payload.savedAt ? new Date(payload.savedAt).toLocaleString() : 'now';
-      saveState.textContent =
-        'Saved automatically • CR ' + lastInput.demoId + ' • ' + when;
-    } else {
-      saveState.textContent =
-        'NOT SAVED — ' + (payload.saveError || 'Storage error') +
-        '. Use Retry save.';
-    }
+    resultLoading.hidden = true;
+    output.hidden = false;
+    output.replaceChildren();
 
-    // HARD STOP: suppress ALL numerical dose suggestions and reference doses.
     stopBox.hidden = !r.hardStop;
     stopReasons.replaceChildren();
     if (r.hardStop) {
-      (r.stopReasons || []).forEach(reason => {
-        const line = document.createElement('div');
-        line.textContent = '• ' + reason;
-        stopReasons.appendChild(line);
+      r.stopReasons.forEach(reason => {
+        stopReasons.appendChild(element('div', '', '• ' + reason));
       });
     }
 
-    const lines = [
-      'CR: ' + lastInput.demoId,
-      'Status: ' + r.status,
-      'BSA: ' + r.bsa + ' m²'
-    ];
+    const hero = element('div', 'report-hero' + (r.hardStop ? ' critical' : ''));
+    const lead = element('div', '');
+    lead.appendChild(element('span', 'report-label', 'ASSESSMENT STATUS'));
+    lead.appendChild(element('div', 'report-strong', r.status || 'Review required'));
+    hero.appendChild(lead);
+    hero.appendChild(element('span', 'report-cr', 'CR ' + input.demoId));
+    output.appendChild(hero);
+
+    const basics = element('div', 'report-grid');
+    basics.appendChild(metric('BODY SURFACE AREA', r.bsa == null ? '—' : r.bsa, 'm²'));
+    basics.appendChild(metric('REVIEW', r.hardStop ? 'Required' : (r.candidate ? 'Candidate' : 'Required')));
+    output.appendChild(basics);
 
     if (!r.hardStop && r.candidate) {
-      lines.push('Reference 6-MP: ' + r.ref6 + ' mg/day');
-      lines.push('Reference MTX: ' + r.refM + ' mg/week');
-      lines.push('UNVALIDATED DOSE CANDIDATE — CLINICIAN REVIEW');
-      lines.push('6-MP: ' + r.candidate.mpDaily + ' mg/day');
-      lines.push('MTX: ' + r.candidate.mtxWeekly + ' mg/week');
-      lines.push('Change: ' + r.candidate.changePercent + '%');
+      const dose = element('div', 'report-dose');
+      dose.appendChild(element('h3', 'report-dose-title', 'Illustrative dose candidate · clinician review'));
+      const doses = element('div', 'report-grid');
+      doses.appendChild(metric('6-MP', r.candidate.mpDaily, 'mg/day'));
+      doses.appendChild(metric('MTX', r.candidate.mtxWeekly, 'mg/week'));
+      dose.appendChild(doses);
+      const note = element('p', 'report-disclaimer',
+        'Illustrative change: ' + r.candidate.changePercent +
+        '%. Reference 6-MP: ' + r.ref6 + ' mg/day; MTX: ' + r.refM +
+        ' mg/week. These values are unvalidated and require clinician review.');
+      dose.appendChild(note);
+      output.appendChild(dose);
     } else {
-      lines.push('NO AUTOMATED DOSE SUGGESTION. Clinician review required.');
+      output.appendChild(element('div', 'report-no-dose',
+        'No automated dose suggestion. Clinician review required.'));
     }
 
-    lines.push('ASSESSMENT ONLY — NOT AN AUTHORISED PRESCRIPTION.');
-    output.textContent = lines.join('\n');
+    output.appendChild(element('p', 'report-disclaimer',
+      'Clinical decision-support prototype only. This assessment is not an authorised prescription.'));
 
-    const ul = document.getElementById('warnings');
-    ul.replaceChildren();
+    warningsBox.replaceChildren();
     (r.warnings || []).forEach(w => {
-      const li = document.createElement('li');
-      li.textContent = w;
-      ul.appendChild(li);
+      warningsBox.appendChild(element('li', '', w));
     });
-
-    message.textContent = r.hardStop
-      ? 'Hard stop — automated dose suggestion blocked.'
-      : 'Assessment complete.';
-    if (!saved) message.textContent += ' AUTOSAVE FAILED — NOT SAVED.';
+    return true;
   }
 
-  /* ERROR HANDLING */
-
-  function error(e, input, seq) {
-    busy = false;
-    calculateButton.disabled = false;
-    if (seq !== version) return;
-    const detail = (e && e.message) || String(e);
-    message.textContent = 'AUTOSAVE FAILED — NOT SAVED: ' +
-      detail + '. Fetching safety assessment...';
-    // A save failure must not hide toxicity findings.
-    google.script.run
-      .withSuccessHandler(r => render({
-        assessment: r, saved: false, saveError: detail
-      }, seq))
-      .withFailureHandler(second => {
-        if (seq !== version) return;
-        message.textContent =
-          'Assessment and save unavailable — NOT SAVED: ' +
-          ((second && second.message) || String(second));
-      })
-      .assessCase(input);
+  function reportError(detail) {
+    resultLoading.hidden = true;
+    output.hidden = false;
+    output.replaceChildren(element('div', 'report-no-dose', detail));
+    message.textContent = detail;
   }
 
-  /* CALCULATE AND AUTO-SAVE */
+  function markSavePending() {
+    saveState.classList.remove('unsaved');
+    saveState.classList.add('pending');
+    saveState.textContent = 'Saving assessment to the restricted history sheet…';
+    saveButton.hidden = true;
+    saveButton.disabled = true;
+  }
+
+  function markSaved(input, when) {
+    saved = true;
+    saveState.classList.remove('unsaved', 'pending');
+    const displayWhen = when ? new Date(when).toLocaleString() : '';
+    saveState.textContent = 'Saved automatically · CR ' + input.demoId +
+      (displayWhen ? ' · ' + displayWhen : '');
+    saveButton.hidden = true;
+    saveButton.disabled = true;
+  }
+
+  function markSaveFailed(err) {
+    saved = false;
+    saveState.classList.remove('pending');
+    saveState.classList.add('unsaved');
+    const detail = (err && err.message) || String(err);
+    saveState.textContent = 'NOT SAVED · ' + detail + '. Use Retry save.';
+    saveButton.hidden = false;
+    saveButton.disabled = false;
+    message.textContent = 'Assessment not saved; review the error and retry.';
+  }
+
+  /* CALCULATE — SHOW REPORT FIRST, SAVE IN PARALLEL */
 
   form.addEventListener('submit', e => {
     e.preventDefault();
     if (busy || !validate()) return;
     if (!(window.google && google.script && google.script.run)) {
-      message.textContent = 'Open inside Google Apps Script.';
+      message.textContent = 'Open the published Google Apps Script web app.';
       return;
     }
 
-    const data = Object.fromEntries(new FormData(form).entries());
-    data._entryId =
-      (window.crypto && typeof window.crypto.randomUUID === 'function')
-        ? window.crypto.randomUUID()
-        : (Date.now().toString(36) + '_' +
-           Math.random().toString(36).slice(2) + '_' +
-           Math.random().toString(36).slice(2));
-    lastInput = data;
+    const input = Object.fromEntries(new FormData(form).entries());
+    input._entryId = (window.crypto && typeof window.crypto.randomUUID === 'function')
+      ? window.crypto.randomUUID()
+      : (Date.now().toString(36) + '_' +
+         Math.random().toString(36).slice(2) + '_' +
+         Math.random().toString(36).slice(2));
+    lastInput = input;
     const seq = version;
-
-    result.style.display = 'none';
-    saveButton.disabled = true;
-    saveButton.hidden = true;
-    calculateButton.disabled = true;
     busy = true;
-    message.textContent = 'Calculating and saving assessment...';
+    calculateButton.disabled = true;
+    calculateButton.textContent = 'Preparing assessment…';
 
+    result.style.display = 'block';
+    output.hidden = true;
+    output.replaceChildren();
+    resultLoading.hidden = false;
+    loadingText.textContent = 'Preparing assessment…';
+    stopBox.hidden = true;
+    stopReasons.replaceChildren();
+    warningsBox.replaceChildren();
+    markSavePending();
+    message.textContent = 'Assessment requested.';
+
+    // Scroll straight to the new report — otherwise it is below the long Clinical form.
+    requestAnimationFrame(() => {
+      if (seq === version) result.scrollIntoView({behavior: 'smooth', block: 'start'});
+    });
+
+    let previewFinished = false;
+    let previewReady = false;
+    let saveFinished = false;
+
+    // Quick read-only preview: this call never writes patient records.
     google.script.run
-      .withSuccessHandler(payload => render(payload, seq))
-      .withFailureHandler(err => error(err, data, seq))
-      .assessAndSave(data);
+      .withSuccessHandler(r => {
+        previewFinished = true;
+        if (seq !== version || (saveFinished && previewReady)) return;
+        previewReady = showReport(r, seq, input);
+        if (!saveFinished && previewReady) {
+          message.textContent = 'Assessment shown; automatic save in progress.';
+        }
+      })
+      .withFailureHandler(err => {
+        previewFinished = true;
+        if (seq !== version || previewReady) return;
+        if (saveFinished) {
+          reportError('Assessment unavailable: ' + ((err && err.message) || String(err)));
+        } else {
+          loadingText.textContent = 'Finishing the assessment…';
+        }
+      })
+      .assessCase(input);
+
+    // Always save the complete assessment once per Calculate click.
+    // This retains the existing backend's append-only history and retry ID.
+    google.script.run
+      .withSuccessHandler(payload => {
+        saveFinished = true;
+        busy = false;
+        calculateButton.disabled = false;
+        calculateButton.textContent = 'Calculate Assessment';
+        if (seq !== version) return;
+        if (!payload || !showReport(payload.assessment, seq, input)) {
+          // A malformed response must not appear as a confirmed save.
+          markSaveFailed(new Error('Server response was incomplete'));
+          return;
+        }
+        previewReady = true;
+        if (payload.saved === true) {
+          markSaved(input, payload.savedAt);
+          message.textContent = 'Assessment complete.';
+        } else {
+          markSaveFailed(new Error(payload.saveError || 'Save not confirmed'));
+        }
+      })
+      .withFailureHandler(err => {
+        saveFinished = true;
+        busy = false;
+        calculateButton.disabled = false;
+        calculateButton.textContent = 'Calculate Assessment';
+        if (seq !== version) return;
+        markSaveFailed(err);
+        if (previewFinished && !previewReady) {
+          reportError('Assessment unavailable. Check your entries and the error above.');
+        }
+      })
+      .assessAndSave(input);
   });
 
-    /* RESET */
+  /* RESET */
 
   document.getElementById('reset')
     .addEventListener('click', () => {
-
       form.reset();
 
       form.querySelectorAll('[data-slider]')
         .forEach(s => {
-
           s.value =
             form.elements[
               s.dataset.slider
             ].value;
         });
 
-      // Restore all green defaults
       applyDefaultChoices();
-
       updateBsa();
-
       invalidate();
-
       showTab(0);
     });
 
-  /* MANUAL RETRY ONLY AFTER AUTO-SAVE FAILURE */
+  /* RETRY SAVE AFTER AUTOMATIC SAVE FAILURE */
 
   saveButton.addEventListener('click', () => {
-    if (!lastInput || busy || saveBusy || saved) return;
-    const input = Object.assign({}, lastInput);
+    if (
+      !lastInput ||
+      busy ||
+      saveBusy ||
+      saved
+    ) return;
+
+    const input =
+      Object.assign({}, lastInput);
+
     const seq = version;
+
     saveBusy = true;
     saveButton.disabled = true;
     message.textContent = 'Retrying save...';
@@ -1501,27 +2074,37 @@ input[type=range]:focus-visible {
     google.script.run
       .withSuccessHandler(text => {
         saveBusy = false;
+
         if (seq !== version) return;
+
         saved = true;
         saveButton.hidden = true;
-        saveState.classList.remove('unsaved');
-        saveState.textContent = 'Saved successfully • CR ' + input.demoId;
+
+        markSaved(input);
         message.textContent = text;
       })
       .withFailureHandler(err => {
         saveBusy = false;
+
         if (seq !== version) return;
+
         saveButton.disabled = false;
         saveButton.hidden = false;
+
         saveState.classList.add('unsaved');
+
         saveState.textContent =
-          'NOT SAVED — ' + ((err && err.message) || String(err)) + '. Retry save.';
-        message.textContent = 'Save failed — NOT SAVED.';
+          'NOT SAVED — ' +
+          ((err && err.message) || String(err)) +
+          '. Retry save.';
+
+        message.textContent =
+          'Save failed — NOT SAVED.';
       })
       .saveAssessment(input);
   });
 
-    /* PRINT */
+  /* PRINT */
 
   document.getElementById('print')
     .addEventListener('click', () => {
