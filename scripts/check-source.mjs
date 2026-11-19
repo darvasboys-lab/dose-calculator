@@ -1,4 +1,4 @@
-// PGICH source-only safety checks. No clinical calculations are executed.
+// PHO source regression checks. Clinical rules are exercised only with synthetic inputs.
 // Run: node scripts/check-source.mjs
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -48,8 +48,8 @@ requireIncludes(html, 'small final-page signature', 'Developed by Dr Aman Singh'
 requireIncludes(html, 'new app title', '<h1>PHO ALL Calculator</h1>');
 requireIncludes(code, 'Google Sheets menu title', "createMenu('PHO ALL Calculator')");
 requireIncludes(html, 'BSA arithmetic details', 'BSA-derived reference arithmetic');
-requireIncludes(html, '0%-adjustment explanation', 'The rule applies a 0% change');
-requireIncludes(html, 'visible multiplication', "' × ' + factorDisplay");
+requireIncludes(html, '0%-adjustment explanation', 'the CBC rule applied 0%');
+requireIncludes(html, 'visible multiplication', "' × ' + factor + ' = '");
 
 // Confirm real arithmetic with fictional inputs, without Google Sheets access.
 const assess = runInNewContext(code + '\nassessCase;', {}, {timeout: 3000});
@@ -87,6 +87,6 @@ assert.equal(hardStop.hardStop, true);
 assert.equal(hardStop.candidate, null);
 
 
-console.log('PGICH source checks passed: valid JS, clean document start, 4 tabs,');
+console.log('PHO source checks passed: valid JS, clean document start, 4 tabs,');
 console.log('mobile metadata, hard-stop interface, and assessment/save entry points.');
 console.log('Synthetic arithmetic checks: unchanged, +10%, -10%, hard stop, and BSA references passed.');
