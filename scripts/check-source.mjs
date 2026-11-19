@@ -2,6 +2,7 @@
 // Run: node scripts/check-source.mjs
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 
 const code = readFileSync('Code.gs', 'utf8');
 const html = readFileSync('Index.html', 'utf8');
@@ -44,5 +45,48 @@ requireIncludes(script, 'retry save', '.saveAssessment(input)');
 requireIncludes(script, 'hard-stop handling', 'stopBox.hidden = !r.hardStop');
 requireIncludes(html, 'small final-page signature', 'Developed by Dr Aman Singh');
 
+requireIncludes(html, 'new app title', '<h1>PHO ALL Calculator</h1>');
+requireIncludes(code, 'Google Sheets menu title', "createMenu('PHO ALL Calculator')");
+requireIncludes(html, 'BSA arithmetic details', 'BSA-derived reference arithmetic');
+requireIncludes(html, '0%-adjustment explanation', 'The rule applies a 0% change');
+requireIncludes(html, 'visible multiplication', "' × ' + factorDisplay");
+
+// Confirm real arithmetic with fictional inputs, without Google Sheets access.
+const assess = runInNewContext(code + '\nassessCase;', {}, {timeout: 3000});
+const fixture = {
+  demoId: '0042', age: 6, height: 115, weight: 20,
+  current6: 35, currentM: 20,
+  wbc: 2500, anc: 1000, alc: 900, platelets: 180000,
+  prevWbc: 2600, prevAnc: 1050,
+  bilirubin: 0.8, biliULN: 1, ast: 30, alt: 30,
+  transULN: 40, rising: 'no', fever: 'no',
+  infection: 'no', jaundice: 'no', mucositis: 'no',
+  tpmt: 'normal', nudt15: 'normal', adherence: 'good'
+};
+const stable = assess(fixture);
+assert.equal(stable.candidate.mpDaily, 35);
+assert.equal(stable.candidate.mtxWeekly, 20);
+assert.equal(stable.candidate.changePercent, 0);
+assert.equal(stable.bsa, 0.799);
+assert.equal(stable.ref6, 40);
+assert.equal(stable.refM, 16);
+
+const increase = assess({...fixture,
+  wbc: 5000, anc: 2000, prevWbc: 4500, prevAnc: 1800});
+assert.equal(increase.candidate.mpDaily, 38.5);
+assert.equal(increase.candidate.mtxWeekly, 22);
+assert.equal(increase.candidate.changePercent, 10);
+
+const decrease = assess({...fixture, anc: 600});
+assert.equal(decrease.candidate.mpDaily, 31.5);
+assert.equal(decrease.candidate.mtxWeekly, 18);
+assert.equal(decrease.candidate.changePercent, -10);
+
+const hardStop = assess({...fixture, anc: 400});
+assert.equal(hardStop.hardStop, true);
+assert.equal(hardStop.candidate, null);
+
+
 console.log('PGICH source checks passed: valid JS, clean document start, 4 tabs,');
 console.log('mobile metadata, hard-stop interface, and assessment/save entry points.');
+console.log('Synthetic arithmetic checks: unchanged, +10%, -10%, hard stop, and BSA references passed.');
