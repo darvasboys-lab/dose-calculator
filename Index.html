@@ -59,6 +59,7 @@ main {
 }
 
 /* Startup welcome: restrained gold accent, automatic dismissal. */
+.welcome-overlay[hidden] { display: none !important; }
 .welcome-overlay {
   position: fixed;
   inset: 0;
@@ -1420,7 +1421,7 @@ header.app-header h1 {
 <body>
 <!-- Short welcoming banner for each fresh page load. It closes automatically
      so that anonymous users can always reach the calculator without extra steps. -->
-<div id="welcomeBanner" class="welcome-overlay" role="dialog"
+<div id="welcomeBanner" class="welcome-overlay" hidden role="dialog"
      aria-modal="true" aria-labelledby="welcomeTitle">
   <section class="welcome-panel">
     <div class="welcome-emblem" aria-hidden="true">PHO</div>
@@ -1518,6 +1519,8 @@ header.app-header h1 {
   // version number. Version numbers shown by clasp change at deployment.
   const welcomeBanner = document.getElementById('welcomeBanner');
   const welcomeStart = document.getElementById('welcomeStart');
+  welcomeBanner.hidden = false;
+  welcomeStart.focus({preventScroll: true});
   let welcomeDismissed = false;
   let welcomeTimeout = null;
   let welcomeHideTimeout = null;
