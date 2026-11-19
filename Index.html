@@ -751,71 +751,401 @@ input[type=range]:focus-visible {
     .stepper { max-width: min(100%, 302px); }
   }
 
-/* -------------------------------------------
-   PREMIUM REPORT + FINAL-PAGE ONLY FOOTER v7
-   ------------------------------------------- */
-header::after { display: none !important; }
+/* =============================================
+   PHO ALL — REFINED CLINICAL ASSESSMENT REPORT
+   Presentation only. Clinical calculations remain in Code.gs.
+   ============================================= */
 
-.dev-credit {
-  margin: 17px auto 1px;
-  padding: 8px 0 1px;
-  border: 0;
-  background: transparent;
-  text-align: center;
-  font: normal 500 10px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  letter-spacing: .015em;
-  color: #8793a1;
-}
-
-/* Large, obvious primary action on last step */
+/* Refined full-width actions */
 #calculate {
   display: block;
   width: 100%;
   flex: 1 0 100%;
   min-height: 64px;
-  padding: 18px 16px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, #237fb9, #12639b);
-  color: white;
-  font-size: 17px;
-  font-weight: 750;
-  letter-spacing: -.02em;
-  box-shadow: 0 6px 18px rgba(22,106,166,.18);
+  padding: 17px 16px;
+  border: 0;
+  border-radius: 15px;
+  color: #fff;
+  background: linear-gradient(180deg, #2074af 0%, #135d94 100%);
+  font-size: 16px;
+  font-weight: 740;
+  letter-spacing: -.012em;
+  box-shadow: 0 5px 14px rgba(25, 91, 145, .17);
 }
-#calculate:active { background: #125b91; }
+#calculate:active { background: #115587; }
 #reset { flex: 1 0 100%; }
 
+/* One deliberate report surface instead of nested card clutter */
 #result {
   scroll-margin-top: 12px;
-  padding: 23px 20px 21px;
-  border-radius: 20px;
-  border-color: #dce6ee;
+  padding: 22px 19px 19px;
+  border: 1px solid #e1e8ef;
+  border-radius: 21px;
+  background: #fff;
+  box-shadow: 0 12px 35px rgba(29, 54, 79, .065);
 }
 #result > h2 {
   margin: 0 0 17px;
-  font-size: 21px;
-  font-weight: 760;
+  color: #172f43;
+  font-size: 22px;
+  font-weight: 780;
+  letter-spacing: -.035em;
 }
 .report-eyebrow {
-  margin: 0 0 5px;
-  color: #6b8193;
+  margin: 0 0 4px;
+  color: #927241;
   font-size: 10px;
-  font-weight: 780;
-  letter-spacing: .135em;
+  font-weight: 750;
+  letter-spacing: .115em;
 }
+#result .summary {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  white-space: normal;
+  line-height: 1.48;
+}
+.summary[hidden], .report-loading[hidden] { display: none !important; }
+
+/* Status is the clear visual anchor, but not a prescription status */
+.report-hero {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+  padding: 18px 17px;
+  border: 1px solid #d8e7f0;
+  border-radius: 15px;
+  background: linear-gradient(120deg, #f1f7fb, #fbfdff);
+}
+.report-hero::before {
+  content: "";
+  position: absolute;
+  top: 15px;
+  bottom: 15px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: #3a83b5;
+}
+.report-hero.critical {
+  border-color: #e7b6bc;
+  background: #fff7f7;
+}
+.report-hero.critical::before { background: #b6313e; }
+.report-hero.review {
+  border-color: #e9dfc8;
+  background: #fcfaf5;
+}
+.report-hero.review::before { background: #a8874b; }
+.report-hero.maintain {
+  border-color: #d7e7e1;
+  background: #f6faf8;
+}
+.report-hero.maintain::before { background: #43856c; }
+.report-hero-main { flex: 1 1 180px; min-width: 0; }
+.report-label {
+  display: block;
+  margin-bottom: 5px;
+  color: #728394;
+  font-size: 10.5px;
+  font-weight: 720;
+  letter-spacing: .018em;
+}
+.report-strong {
+  display: block;
+  color: #214764;
+  font-size: 19px;
+  font-weight: 790;
+  line-height: 1.3;
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
+}
+.report-hero.critical .report-strong { color: #a12e3c; }
+.report-hero.review .report-strong { color: #775d2c; }
+.report-hero.maintain .report-strong { color: #27614c; }
+.report-cr {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border: 1px solid #dae4eb;
+  border-radius: 9px;
+  background: rgba(255,255,255,.85);
+  color: #476073;
+  font-size: 11px;
+  font-weight: 740;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+}
+.report-status-note {
+  margin: 9px 0 0;
+  color: #5d7182;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* Compact facts, not competing callouts */
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.report-tile {
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid #e5ebf0;
+  border-radius: 13px;
+  background: #f9fafc;
+}
+.report-value {
+  color: #243f56;
+  font-size: 21px;
+  font-weight: 785;
+  line-height: 1.25;
+  letter-spacing: -.025em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.report-value span {
+  color: #748394;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* Medication comparisons: input and generated number clearly differentiated */
+.report-dose {
+  padding: 17px 15px 14px;
+  border: 1px solid #dce8f0;
+  border-radius: 15px;
+  background: #f7fafc;
+}
+.report-section-heading {
+  margin: 0 0 4px;
+  color: #243d53;
+  font-size: 14px;
+  font-weight: 780;
+  letter-spacing: -.018em;
+}
+.report-section-subtitle {
+  margin: 0 0 14px;
+  color: #758494;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.report-rule-note {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #eaf2f8;
+  color: #3b647e;
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 580;
+}
+.report-drug {
+  margin-top: 10px;
+  padding: 14px 13px 12px;
+  border: 1px solid #e0e7ee;
+  border-radius: 12px;
+  background: #fff;
+}
+.report-drug:first-of-type { margin-top: 0; }
+.report-drug-name {
+  margin: 0 0 12px;
+  color: #29475d;
+  font-size: 12px;
+  font-weight: 750;
+}
+.report-drug-name small {
+  color: #8391a0;
+  font-size: 10px;
+  font-weight: 590;
+}
+.report-dose-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
+}
+.report-dose-cell { min-width: 0; }
+.report-dose-cell.final {
+  padding-left: 10px;
+  border-left: 1px solid #e6edf1;
+}
+.report-dose-label {
+  margin: 0 0 2px;
+  color: #8391a0;
+  font-size: 10px;
+  font-weight: 650;
+}
+.report-dose-number {
+  display: block;
+  color: #51677a;
+  font-size: 24px;
+  font-weight: 710;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.035em;
+}
+.report-dose-cell.final .report-dose-number {
+  color: #17649b;
+  font-weight: 800;
+}
+.report-dose-unit {
+  display: block;
+  margin-top: 1px;
+  color: #8a98a5;
+  font-size: 10px;
+}
+.report-dose-arrow {
+  color: #9aabba;
+  font-size: 20px;
+  font-weight: 350;
+  text-align: center;
+}
+.report-formula {
+  margin: 11px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid #edf0f3;
+  color: #738495;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.report-calc-panel,
+.report-reference {
+  padding: 14px 15px;
+  border: 1px solid #e6ebf0;
+  border-radius: 13px;
+  background: #fff;
+}
+.report-reference {
+  background: #fbfbfc;
+}
+.report-panel-heading {
+  margin: 0 0 8px;
+  color: #344e63;
+  font-size: 12.5px;
+  font-weight: 745;
+}
+.report-calc-equation {
+  margin: 0;
+  color: #435c70;
+  font-size: 12px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.report-ref-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid #edf0f3;
+  color: #536779;
+  font-size: 12px;
+}
+.report-ref-row:last-of-type { border-bottom: 0; }
+.report-ref-row strong {
+  color: #304b61;
+  font-weight: 760;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.report-disclaimer {
+  margin: 0;
+  padding: 10px 11px;
+  border: 0;
+  border-radius: 10px;
+  background: #f5f6f8;
+  color: #76838f;
+  font-size: 10.5px;
+  font-weight: 520;
+  line-height: 1.55;
+}
+.report-reference .report-disclaimer,
+.report-dose .report-disclaimer { margin-top: 11px; }
+.report-no-dose {
+  padding: 13px 14px;
+  border: 1px solid #e7d7c8;
+  border-radius: 12px;
+  background: #fcf9f5;
+  color: #715b44;
+  font-size: 12px;
+  line-height: 1.55;
+  font-weight: 600;
+}
+
+/* Save confirmation is distinct from clinical status */
+#result .save-state {
+  margin-top: 15px;
+  padding: 11px 12px;
+  border: 1px solid #d8e9df;
+  border-radius: 11px;
+  background: #f3faf5;
+  color: #286b4c;
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+#result .save-state::before {
+  content: "●";
+  margin-right: 8px;
+  font-size: 9px;
+  color: #3d9a66;
+}
+#result .save-state.pending {
+  border-color: #dce8f0;
+  background: #f4f8fb;
+  color: #59768e;
+}
+#result .save-state.pending::before { color: #6c9fc5; }
+#result .save-state.unsaved {
+  border-color: #e7cbce;
+  background: #fff5f6;
+  color: #a12e3c;
+}
+#result .save-state.unsaved::before { color: #b6313e; }
+#result #warnings {
+  margin: 14px 0 0;
+  padding: 11px 13px 11px 30px;
+  border: 1px solid #e9ddc6;
+  border-radius: 11px;
+  background: #fffcf7;
+  color: #7e6233;
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+#result #warnings:empty { display: none; }
+#result .actions { margin-top: 14px; }
+
+/* Preserve and emphasise toxicity alerts */
+#result .stop-alert {
+  margin-bottom: 15px;
+  border-left-width: 4px;
+  font-size: 12px;
+  box-shadow: none;
+}
+
+/* Assessment loading */
 .report-loading {
   display: flex;
   gap: 11px;
   align-items: center;
-  padding: 19px 15px;
+  padding: 18px 15px;
   border: 1px solid #dfebf5;
+  border-radius: 13px;
   background: #f4f8fc;
-  border-radius: 14px;
   color: #456b86;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 670;
 }
-.report-loading[hidden], .summary[hidden] { display: none !important; }
 .report-spinner {
   flex: 0 0 17px;
   width: 17px;
@@ -826,215 +1156,26 @@ header::after { display: none !important; }
   animation: report-spin .75s linear infinite;
 }
 @keyframes report-spin { to { transform: rotate(360deg); } }
-
-#result .summary {
-  display: grid;
-  gap: 12px;
-  padding: 0;
-  margin: 0;
-  border: 0;
-  background: transparent;
-  white-space: normal;
-  line-height: 1.4;
-}
-.report-hero {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 11px;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 18px 17px;
-  background: linear-gradient(135deg, #f1f7fb 0%, #f9fbfd 100%);
-  border: 1px solid #dceaf3;
-  border-radius: 16px;
-}
-.report-label {
-  display: block;
-  margin-bottom: 5px;
-  color: #728294;
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: .01em;
-}
-.report-strong {
-  display: block;
-  color: #214661;
-  font-size: 17px;
-  font-weight: 760;
-  letter-spacing: -.025em;
-  overflow-wrap: anywhere;
-}
-.report-cr {
-  color: #38566c;
-  border: 1px solid #dbe6ee;
-  background: #fff;
-  border-radius: 11px;
-  padding: 7px 10px;
-  font-size: 12px;
-  font-weight: 750;
-  font-variant-numeric: tabular-nums;
-}
-.report-hero.critical {
-  border-color: #eabec2;
-  background: #fff5f5;
-}
-.report-hero.critical .report-strong { color: #a32935; }
-.report-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0,1fr));
-  gap: 10px;
-}
-.report-tile {
-  min-width: 0;
-  padding: 14px 13px;
-  background: #f8fafc;
-  border: 1px solid #e6edf3;
-  border-radius: 13px;
-}
-.report-value {
-  color: #253f54;
-  font-size: 19px;
-  font-weight: 760;
-  line-height: 1.28;
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
-}
-.report-value span {
-  color: #708193;
-  font-size: 11px;
-  font-weight: 650;
-}
-.report-dose {
-  padding: 15px 14px;
-  border: 1px solid #dae8f0;
-  border-radius: 15px;
-  background: #f4f8fb;
-}
-.report-dose-title {
-  margin: 0 0 12px;
-  color: #335d7b;
-  font-size: 13px;
-  font-weight: 760;
-}
-.report-dose .report-tile {
-  background: #fff;
-  border-color: #e2ebf2;
-}
-.report-disclaimer {
-  margin: 1px 0 0;
-  padding: 11px 12px;
-  border-radius: 11px;
-  background: #f6f7f9;
-  color: #667685;
-  font-size: 11px;
-  font-weight: 540;
-  line-height: 1.5;
-}
-.report-no-dose {
-  padding: 13px 14px;
-  border-radius: 12px;
-  border: 1px solid #e7e8ed;
-  background: #f9f9fa;
-  color: #455767;
-  font-size: 12px;
-  font-weight: 650;
-}
-#result #warnings { margin: 12px 0 0; padding: 0 0 0 18px; color: #885b2c; font-size: 12px; line-height: 1.55; }
-#result #warnings:empty { display:none; }
-#result .save-state {
-  padding: 11px 12px;
-  border: 1px solid #d9eadd;
-  border-radius: 11px;
-  background: #f2faf4;
-  font-size: 12px;
-}
-#result .save-state.unsaved { border-color:#eed4d6; background:#fff4f4; }
-#result .save-state.pending { border-color:#dce8f2; background:#f3f8fc; color:#59758b; }
-
-@media (max-width: 430px) {
-  #calculate { min-height: 66px; font-size: 17px; }
-  #result { padding: 20px 15px 18px; }
-  .report-hero { padding: 15px 13px; }
-  .report-grid { gap: 8px; }
-  .report-tile { padding: 12px 10px; }
-  .report-value { font-size: 17px; }
-}
 @media (prefers-reduced-motion: reduce) {
   .report-spinner { animation: none; }
 }
-
-
-/* Explicit calculation breakdown in the result card. */
-.report-calc-panel,
-.report-reference {
-  padding: 14px;
-  border: 1px solid #e2eaf1;
-  border-radius: 14px;
-  background: #fbfcfd;
+@media (max-width: 430px) {
+  #result { padding: 19px 14px 17px; }
+  #result > h2 { font-size: 20px; }
+  .report-hero { padding: 15px 13px; }
+  .report-strong { font-size: 17px; }
+  .report-tile { padding: 11px 10px; }
+  .report-value { font-size: 19px; }
+  .report-dose { padding: 14px 12px; }
+  .report-drug { padding: 12px 11px 11px; }
+  .report-dose-number { font-size: 22px; }
 }
-.report-panel-heading {
-  margin: 0 0 8px;
-  color: #3f5b72;
-  font-size: 12px;
-  font-weight: 750;
-}
-.report-calc-equation {
-  margin: 0;
-  color: #28465b;
-  font-size: 14px;
-  font-weight: 630;
-  line-height: 1.5;
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
-}
-.report-calc-explanation {
-  margin: 0 0 12px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: #e8f2fa;
-  color: #345d78;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.55;
-}
-.report-equation-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 0;
-  border-top: 1px solid #dce8f0;
-}
-.report-equation-label {
-  flex: 0 0 34%;
-  color: #60778a;
-  font-size: 11.5px;
-  font-weight: 720;
-}
-.report-equation-value {
-  flex: 1;
-  min-width: 0;
-  color: #213f57;
-  text-align: right;
-  font-size: 14px;
-  font-weight: 760;
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
-}
-.report-reference {
-  background: #fff;
-}
-.report-reference .report-dose-title {
-  margin-bottom: 10px;
-}
-.report-reference .report-disclaimer,
-.report-dose .report-disclaimer {
-  margin-top: 11px;
-}
-@media (max-width: 360px) {
-  .report-equation-row { display: block; }
-  .report-equation-label { display: block; margin-bottom: 5px; }
-  .report-equation-value { text-align: left; }
+@media print {
+  #result { border: 0; box-shadow: none; padding: 0; }
+  .report-hero, .report-drug, .report-calc-panel, .report-reference {
+    break-inside: avoid;
+  }
+  #result .save-state::before { content: ""; }
 }
 
 /* Compact premium gold title — no banner, badge, overline or tagline. */
@@ -1908,10 +2049,39 @@ header.app-header h1 {
     return tile;
   }
 
+  function reportDrug(name, interval, oldValue, suggestedValue, percent) {
+    const drug = element('div', 'report-drug');
+    const header = element('p', 'report-drug-name', name + ' ');
+    header.appendChild(element('small', '', '· ' + interval));
+    drug.appendChild(header);
+
+    const compare = element('div', 'report-dose-flow');
+    function side(label, value, isFinal) {
+      const cell = element('div', 'report-dose-cell' + (isFinal ? ' final' : ''));
+      cell.appendChild(element('div', 'report-dose-label', label));
+      cell.appendChild(element('strong', 'report-dose-number', value));
+      cell.appendChild(element('span', 'report-dose-unit', interval));
+      return cell;
+    }
+    compare.appendChild(side('Entered dose', oldValue, false));
+    compare.appendChild(element('div', 'report-dose-arrow', '→'));
+    compare.appendChild(side('Calculated candidate', suggestedValue, true));
+    drug.appendChild(compare);
+    const factor = (1 + percent / 100).toFixed(2);
+    drug.appendChild(element('p', 'report-formula',
+      'Calculation: ' + oldValue + ' × ' + factor + ' = ' + suggestedValue + ' ' + interval));
+    return drug;
+  }
+
   function showReport(r, seq, input) {
     if (seq !== version) return false;
     if (!r || typeof r.hardStop !== 'boolean' ||
-        !Array.isArray(r.stopReasons)) {
+        !Array.isArray(r.stopReasons) ||
+        (r.candidate && (
+          !Number.isFinite(Number(r.candidate.mpDaily)) ||
+          !Number.isFinite(Number(r.candidate.mtxWeekly)) ||
+          !Number.isFinite(Number(r.candidate.changePercent))
+        ))) {
       reportError('Assessment response not recognised. Check that the latest Code.gs is deployed.');
       return false;
     }
@@ -1929,90 +2099,99 @@ header.app-header h1 {
       });
     }
 
-    const hero = element('div', 'report-hero' + (r.hardStop ? ' critical' : ''));
-    const lead = element('div', '');
-    lead.appendChild(element('span', 'report-label', 'ASSESSMENT STATUS'));
+    const percent = r.candidate ? Number(r.candidate.changePercent) : null;
+    const tone = r.hardStop ? ' critical' :
+      (!r.candidate ? ' review' : (percent === 0 ? ' maintain' : ''));
+    const hero = element('div', 'report-hero' + tone);
+    const lead = element('div', 'report-hero-main');
+    lead.appendChild(element('span', 'report-label', 'PROTOTYPE ASSESSMENT'));
     lead.appendChild(element('div', 'report-strong', r.status || 'Review required'));
+
+    const reason = r.hardStop
+      ? 'Safety flag detected. Automated dose candidates are blocked.'
+      : !r.candidate
+        ? 'Insufficient or discordant findings for a numerical candidate.'
+        : percent === 0
+          ? 'The configured CBC range leads to a 0% adjustment.'
+          : 'A percentage adjustment was generated by the configured prototype rules.';
+    lead.appendChild(element('p', 'report-status-note', reason));
     hero.appendChild(lead);
     hero.appendChild(element('span', 'report-cr', 'CR ' + input.demoId));
     output.appendChild(hero);
 
-    // All arithmetic displayed below comes from the same server assessment
-    // and the entered inputs. No alternate clinical dose rules are introduced.
+    // The display reflects the existing assessCase() result without changing
+    // clinical logic, reference coefficients, or hard-stop conditions.
     const bsa = Number(r.bsa);
     const height = Number(input.height);
     const weight = Number(input.weight);
-    const basics = element('div', 'report-grid');
-    basics.appendChild(metric('BODY SURFACE AREA', Number.isFinite(bsa) ? bsa : '—', 'm²'));
-    basics.appendChild(metric(
-      'DOSE ADJUSTMENT',
+    const facts = element('div', 'report-grid');
+    facts.appendChild(metric('BODY SURFACE AREA',
+      Number.isFinite(bsa) ? bsa.toFixed(3) : '—', 'm²'));
+    facts.appendChild(metric('CBC RULE ADJUSTMENT',
       r.hardStop ? 'Blocked' :
-        (r.candidate ? (Number(r.candidate.changePercent) > 0 ? '+' : '') +
-          r.candidate.changePercent + '%' : 'Not calculated')
-    ));
-    output.appendChild(basics);
+        r.candidate ? (percent > 0 ? '+' : '') + percent + '%' : 'Review'));
+    output.appendChild(facts);
 
-    if (Number.isFinite(bsa) && Number.isFinite(height) && Number.isFinite(weight)) {
+    if (r.hardStop) {
+      output.appendChild(element('div', 'report-no-dose',
+        'No automated dose candidate or reference dose is displayed when a hard-stop criterion is present. Clinical review is required.'));
+    } else if (!r.candidate) {
+      output.appendChild(element('div', 'report-no-dose',
+        'No numerical dose candidate was generated by the current rules. This is not an instruction to maintain or adjust treatment.'));
+    } else {
+      const comparison = element('div', 'report-dose');
+      comparison.appendChild(element('h3', 'report-section-heading',
+        'Illustrative dose comparison'));
+      comparison.appendChild(element('p', 'report-section-subtitle',
+        'Current entered doses versus calculated candidates · clinician review required'));
+
+      const ruleNote = percent === 0
+        ? 'No change generated: the entered doses and calculated candidates are equal because the CBC rule applied 0%.'
+        : (percent > 0
+          ? 'The existing rule applied an illustrative +' + percent + '% adjustment.'
+          : 'The existing rule applied an illustrative ' + percent + '% adjustment.');
+      comparison.appendChild(element('p', 'report-rule-note', ruleNote));
+      comparison.appendChild(reportDrug('6-MP', 'mg/day',
+        Number(input.current6), r.candidate.mpDaily, percent));
+      comparison.appendChild(reportDrug('Methotrexate (MTX)', 'mg/week',
+        Number(input.currentM), r.candidate.mtxWeekly, percent));
+      comparison.appendChild(element('p', 'report-disclaimer',
+        'Unvalidated calculated candidates only — not a prescription or treatment order.'));
+      output.appendChild(comparison);
+    }
+
+    // Show BSA maths for transparency; reference values are not candidates.
+    if (Number.isFinite(bsa) && Number.isFinite(height) &&
+        Number.isFinite(weight)) {
       const bsacard = element('div', 'report-calc-panel');
-      bsacard.appendChild(element('div', 'report-panel-heading', 'BSA calculation'));
+      bsacard.appendChild(element('h3', 'report-panel-heading', 'Body surface area'));
       bsacard.appendChild(element('p', 'report-calc-equation',
         '√(' + height + ' cm × ' + weight + ' kg ÷ 3600) = ' + bsa.toFixed(3) + ' m²'));
       output.appendChild(bsacard);
     }
 
-    if (r.hardStop) {
-      output.appendChild(element('div', 'report-no-dose',
-        'Automated dose calculations are blocked because a safety flag was reported. No dose candidate or reference values are displayed. Clinician review required.'));
-    } else if (!r.candidate) {
-      output.appendChild(element('div', 'report-no-dose',
-        'No numerical dose adjustment was generated for this CBC or clinical state. Clinician review required.'));
-    } else {
-      const percent = Number(r.candidate.changePercent);
-      const factor = 1 + percent / 100;
-      const factorDisplay = factor.toFixed(2);
-      const adjustment = element('div', 'report-dose');
-      adjustment.appendChild(element('h3', 'report-dose-title',
-        'CBC adjustment · illustrative estimate, not a prescription'));
-
-      const explanation = percent === 0
-        ? 'MAINTAIN: The current CBC matches the configured maintenance range. The rule applies a 0% change, so the calculated candidate equals the entered dose.'
-        : (percent > 0
-          ? 'INCREASE: The configured CBC and previous-count checks produced an illustrative ' + percent + '% change.'
-          : 'DECREASE: The configured CBC checks produced an illustrative ' + percent + '% change.');
-      adjustment.appendChild(element('p', 'report-calc-explanation', explanation));
-
-      const input6 = Number(input.current6);
-      const inputM = Number(input.currentM);
-      const row6 = element('div', 'report-equation-row');
-      row6.appendChild(element('span', 'report-equation-label', '6-MP · mg/day'));
-      row6.appendChild(element('div', 'report-equation-value',
-        input6 + ' × ' + factorDisplay + ' = ' + r.candidate.mpDaily + ' mg/day'));
-      adjustment.appendChild(row6);
-      const rowM = element('div', 'report-equation-row');
-      rowM.appendChild(element('span', 'report-equation-label', 'MTX · mg/week'));
-      rowM.appendChild(element('div', 'report-equation-value',
-        inputM + ' × ' + factorDisplay + ' = ' + r.candidate.mtxWeekly + ' mg/week'));
-      adjustment.appendChild(rowM);
-      adjustment.appendChild(element('p', 'report-disclaimer',
-        'These are current-dose percentage adjustments using the existing unvalidated prototype rules, not authorised treatment instructions.'));
-      output.appendChild(adjustment);
-
-      if (Number.isFinite(Number(r.ref6)) && Number.isFinite(Number(r.refM))) {
-        const refs = element('div', 'report-reference');
-        refs.appendChild(element('h3', 'report-dose-title',
-          'Separate BSA-derived reference arithmetic'));
-        const refGrid = element('div', 'report-grid');
-        refGrid.appendChild(metric('6-MP · 50 × BSA', r.ref6, 'mg/day'));
-        refGrid.appendChild(metric('MTX · 20 × BSA', r.refM, 'mg/week'));
-        refs.appendChild(refGrid);
-        refs.appendChild(element('p', 'report-disclaimer',
-          'Mathematical reference values based on unvalidated built-in coefficients (50 mg/m²/day and 20 mg/m²/week). NOT the adjusted candidate, a dose target, or a prescribing recommendation.'));
-        output.appendChild(refs);
+    if (!r.hardStop && Number.isFinite(Number(r.ref6)) &&
+        Number.isFinite(Number(r.refM))) {
+      const reference = element('div', 'report-reference');
+      reference.appendChild(element('h3', 'report-panel-heading',
+        'BSA-derived reference arithmetic'));
+      function referenceLine(label, value) {
+        const line = element('div', 'report-ref-row');
+        line.appendChild(element('span', '', label));
+        line.appendChild(element('strong', '', value));
+        return line;
       }
+      reference.appendChild(referenceLine('6-MP · 50 × BSA',
+        r.ref6 + ' mg/day'));
+      reference.appendChild(referenceLine('MTX · 20 × BSA',
+        r.refM + ' mg/week'));
+      reference.appendChild(element('p', 'report-disclaimer',
+        'Separate mathematical references using unvalidated built-in coefficients. These are not candidate doses or prescribing recommendations.'));
+      output.appendChild(reference);
     }
 
     output.appendChild(element('p', 'report-disclaimer',
-      'Clinical decision-support prototype only. Not validated for prescribing; decisions require clinician review.'));
+      'Clinical decision-support prototype only. Not validated for prescribing. The treating team must verify clinical decisions independently.'));
 
     warningsBox.replaceChildren();
     (r.warnings || []).forEach(w => {
