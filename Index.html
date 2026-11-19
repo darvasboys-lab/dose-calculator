@@ -1530,6 +1530,11 @@ header.app-header h1 {
     window.clearTimeout(welcomeTimeout);
     welcomeBanner.classList.add('is-closed');
     welcomeBanner.setAttribute('aria-hidden', 'true');
+    // Return keyboard focus to the working calculator on dismissal.
+    if (document.activeElement === welcomeStart) {
+      const firstTab = tabsBox.querySelector('[data-tab="0"]');
+      if (firstTab) firstTab.focus({preventScroll: true});
+    }
     welcomeHideTimeout = window.setTimeout(() => {
       welcomeBanner.hidden = true;
     }, 250);
