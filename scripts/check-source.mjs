@@ -90,6 +90,12 @@ requireIncludes(html, 'current-dose result wording', "'% of the Current dose'");
 requireIncludes(html, 'separate prominent No Change line', "percent === 0 ? 'No Change'");
 requireIncludes(html, 'same percentage in result', "'% of the Current dose'");
 requireIncludes(html, 'single calculated-dose display', "element('div', 'report-dose-outcome')");
+const renderDoseAt = script.indexOf('output.appendChild(comparison);');
+const renderMetricsAt = script.indexOf('output.appendChild(facts);');
+const renderRulesAt = script.indexOf("element('section', 'report-rules')");
+assert.ok(renderDoseAt >= 0 && renderDoseAt < renderMetricsAt &&
+  renderMetricsAt < renderRulesAt,
+  'Dose/tablet area should appear above BSA and Table Level, before Rules applied');
 requireIncludes(html, 'CBC slider helper', 'function cbcStepper(');
 for (const id of ['wbc', 'anc', 'alc', 'platelets', 'prevWbc', 'prevAnc']) {
   requireIncludes(html, 'CBC slider: ' + id, "data-cbc-slider=\"${name}\"");
