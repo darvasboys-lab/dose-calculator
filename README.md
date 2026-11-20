@@ -28,9 +28,26 @@ The workflow is configured to deploy updates to the existing web-app URL only af
 
 For a manual Windows CMD deployment, in your existing `PHO-ALL-LiveDeploy` folder, download the latest `Code.gs` as `Code.js`, `Index.html` as `Index.html`, and `scripts/stamp-deployment-version.mjs`. Run `node stamp-deployment-version.mjs` immediately before `clasp push --force`, then update the existing deployment with `clasp create-deployment --deploymentId ...`. Finally run `node stamp-deployment-version.mjs --verify`. The version helper uses `clasp list-versions` and `clasp list-deployments`; it does not request additional Google permissions or make visitor-side API calls. Always refresh `Index.html` before each stamp. Preserve the cloned `.clasp.json` and `appsscript.json` files.
 
+## Proposed maintenance therapy rule panel (not validated)
+
+The current calculator includes a **proposed maintenance rule table** supplied for review on 20 November 2026. The result lists **7 checks**, showing each matched condition and which checks changed the calculated illustration:
+
+| WBC (/µL) | Table level displayed |
+| --- | --- |
+| Below 1,000 | 0%; candidate suppressed for clinician review |
+| 1,000–2,000 | 50% |
+| Above 2,000–3,000 | 100% |
+| Above 3,000 | Up to 150%; the prototype illustrates 150% |
+
+The result also checks **ANC (stated target 750–1,500/µL)**, **ALC below 300/µL** (50% cap), **platelets below 50,000/µL** (0%/hard stop), and the **platelet recovery threshold above 100,000/µL** if therapy was previously held. The older ANC below 500/µL safety stop remains. Some combinations require clinician review rather than a numerical candidate. **LFT is optional** and liver thresholds run only when results and reference values are present. **RFT creatinine is optional** and recorded without dosing changes: no renal-dose thresholds were supplied.
+
+**Dose entry:** The app accepts current 6-MP as **50 mg tablets per day**, and current MTX as **2.5 mg tablets per week**. It calculates milligram equivalents. For a fictional 1-tablet 6-MP daily / 4-tablet MTX weekly example at a WBC above 3,000/µL, the 150% calculation displays **1.5 tablets daily** and **6 tablets weekly**. That is **150% of the entered dose, a 50% increase**, not a 150% increase.
+
+**Important modelling limitation:** Protocol dose percentages normally relate to a documented protocol/previously attained full dose; the current prototype applies percentage multipliers to the *entered dose*. Repeated application may compound incorrectly. The project cannot safely support treatment decisions until a qualified clinical team resolves baseline-dose definitions, tablet splitting/rounding, drug interruption/restart status and local protocol applicability. Do not deploy these rules for patient care.
+
 ## Clinical boundaries
 
-- The dose rules and reference coefficients are illustrative and unvalidated.
+- The dose rules and reference coefficients are illustrative and unvalidated; the latest proposed CBC modification table has not undergone institutional clinical verification.
 - Default symptoms, pharmacogenetic statuses and starting doses are fictional examples, not confirmed findings.
 - The app is not a prescription, order to hold or resume chemotherapy, or a substitute for oncologist review.
 - Clinical hard-stop alerts persist on the result screen. Noncritical repeated cautions collapse after three seconds and remain available under **Safety notes**.
