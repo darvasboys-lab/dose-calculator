@@ -2562,13 +2562,21 @@ header.app-header h1 {
           ' (' + (percent > 0 ? '+' : '') + percent + '% change)');
     lead.appendChild(element('div', 'report-strong', statusText));
 
+    const rules = Array.isArray(r.rules) ? r.rules : [];
+    const wbcRule = rules.find(item => item.id === 'WBC');
+    const alcRule = rules.find(item => item.id === 'ALC');
+    const reviewRule = rules.find(item => item.outcome &&
+      (item.outcome.startsWith('No candidate') ||
+       item.outcome.startsWith('No numerical candidate')));
     const reason = r.hardStop
-      ? 'Safety flag detected. Automated dose candidates are blocked.'
+      ? 'Blocked by: ' + (r.stopReasons[0] || 'clinical safety rule') +
+        (r.stopReasons.length > 1 ? ' (more reasons below)' : '')
       : !r.candidate
-        ? 'Insufficient or discordant findings for a numerical candidate.'
-        : percent === 0
-          ? 'The CBC table generated a 100% dose level using the entered doses.'
-          : 'The entered doses have been scaled to the displayed CBC table level; clinical verification required.';
+        ? 'Review: ' + (reviewRule ? reviewRule.outcome :
+          'a required check did not permit a numerical dose; see rules below')
+        : 'Clinic WBC rule: ' +
+          (wbcRule ? wbcRule.outcome : r.candidate.percentOfEntered + '% level') +
+          (alcRule && alcRule.affected ? '; ALC limit applied' : '');
     lead.appendChild(element('p', 'report-status-note', reason));
     hero.appendChild(lead);
     hero.appendChild(element('span', 'report-cr', 'CR ' + input.demoId));
