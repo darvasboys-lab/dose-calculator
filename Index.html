@@ -1401,7 +1401,7 @@ header.app-header h1 {
   <h1>PHO ALL Calculator</h1>
 </header>
 <p class="public-mode-intro" role="note">
-  No sign-in · Automatic Sheet saving · Research prototype
+  No sign-in · Save to Sheet only with Yes
 </p>
 
 <nav id="tabs" class="tabs"
@@ -2727,6 +2727,8 @@ header.app-header h1 {
 
       applyDefaultChoices();
       updateBsa();
+      crRestoreState.hidden = true;
+      crRestoreState.textContent = '';
       invalidate();
       showTab(0);
     });
