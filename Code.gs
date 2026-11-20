@@ -554,6 +554,77 @@ function assessAndSave(d) {
   }
 }
 
+/**
+ * Remove only the CURRENT calculation saved by this browser.
+ * A CR alone is NOT sufficient: require the unpredictable request ID and
+ * exact submitted JSON to match one AssessmentHistory record.
+ * We clear that row without shifting HistoryRow references for other CRs;
+ * LatestByCR is restored to the previous saved entry for this CR if present.
+ */
+function removeSavedAssessment(d) {
+  const cr = String((d && d.demoId) || '').trim();
+  if (!/^\\d{4}$/.test(cr)) throw new Error('Invalid CR for removal.');
+  const requestId = entryId_(d);
+  if (!requestId) throw new Error('Missing assessment ID; removal refused.');
+  const inputJSON = JSON.stringify(d);
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000)) throw new Error('Records busy; try removing again.');
+  try {
+    const ss = workbook_();
+    const history = ss.getSheetByName(CFG.historyName);
+    const latest = ss.getSheetByName(CFG.latestName);
+    if (!history || !latest) throw new Error('Record sheets are unavailable.');
+    const last = history.getLastRow();
+    if (last < 2) throw new Error('Saved assessment not found.');
+    const match = history.getRange(2, 4, last - 1, 1)
+      .createTextFinder('"_entryId":"' + requestId + '"')
+      .matchCase(true).findNext();
+    if (!match) throw new Error('Saved assessment not found or already removed.');
+    const targetRow = match.getRow();
+    const target = history.getRange(targetRow, 1, 1, HISTORY_HEADERS.length).getValues()[0];
+    if (String(target[1]) !== cr || String(target[3]) !== inputJSON) {
+      throw new Error('Assessment identity mismatch; removal refused.');
+    }
+
+    // Find the latest OTHER record for this CR before removing this row.
+    // Never delete a History row: that would invalidate other CR row pointers.
+    let previousRow = 0;
+    const crCells = history.getRange(2, 2, last - 1, 1).getDisplayValues();
+    for (let i = 0; i < crCells.length; i++) {
+      const row = i + 2;
+      if (row !== targetRow && String(crCells[i][0]).trim() === cr) {
+        previousRow = row;
+      }
+    }
+
+    const latestLast = latest.getLastRow();
+    const latestMatch = latestLast > 1
+      ? latest.getRange(2, 1, latestLast - 1, 1)
+        .createTextFinder(cr).matchEntireCell(true).findNext()
+      : null;
+    if (latestMatch) {
+      const latestRow = latestMatch.getRow();
+      const linkedRow = Number(latest.getRange(latestRow, 8).getValue());
+      if (linkedRow === targetRow) {
+        // Update the CR index before clearing History so failures are retryable.
+        if (previousRow) {
+          const h = history.getRange(previousRow, 1, 1, HISTORY_HEADERS.length).getValues()[0];
+          latest.getRange(latestRow, 1).setNumberFormat('@');
+          latest.getRange(latestRow, 1, 1, LATEST_HEADERS.length).setValues([[
+            cr, h[0], h[2], h[3], h[4], h[5], h[6], previousRow
+          ]]);
+        } else {
+          latest.deleteRow(latestRow);
+        }
+      }
+    }
+    history.getRange(targetRow, 1, 1, HISTORY_HEADERS.length).clearContent();
+    return {removed: true, cr: cr};
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 /** Retry failed/uncertain saves using the same assessment request ID. */
 function saveAssessment(d) {
   const assessment = assessCase(d);
