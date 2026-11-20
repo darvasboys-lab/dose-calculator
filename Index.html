@@ -1477,7 +1477,7 @@ header.app-header h1 {
     }, 250);
   }
   // A missing version marker should not show a fabricated release number.
-  if (/^\\d+$/.test(deploymentVersion.textContent.trim())) {
+  if (/^\d+$/.test(deploymentVersion.textContent.trim())) {
     welcomeBanner.hidden = false;
     welcomeTimeout = window.setTimeout(closeWelcome, 2800);
     welcomeBanner.addEventListener('click', closeWelcome);
