@@ -563,7 +563,7 @@ function assessAndSave(d) {
  */
 function removeSavedAssessment(d) {
   const cr = String((d && d.demoId) || '').trim();
-  if (!/^\\d{4}$/.test(cr)) throw new Error('Invalid CR for removal.');
+  if (!/^\d{4}$/.test(cr)) throw new Error('Invalid CR for removal.');
   const requestId = entryId_(d);
   if (!requestId) throw new Error('Missing assessment ID; removal refused.');
   const inputJSON = JSON.stringify(d);
