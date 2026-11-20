@@ -274,7 +274,7 @@ function assessCase(d) {
     stops.push('Ma’am clinic platelet rule: below 50,000/µL → 0%; clinician review required');
   }
   if (x.platelets >= 50000 && x.platelets <= 100000) {
-    warnings.push('If therapy was held for low platelets, the supplied protocol requires >100,000/µL before considering restart.');
+    warnings.push('If therapy was held for low platelets, Ma’am’s clinic rule requires >100,000/µL before considering restart.');
   }
   rule('PLT', 'Platelets',
     x.platelets.toLocaleString('en-US') + '/µL; ' +
