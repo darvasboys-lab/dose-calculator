@@ -194,7 +194,9 @@ assert.equal(bilirubinOver5.hardStop, true);
 assert.equal(bilirubinOver5.candidate, null);
 assert.ok(bilirubinOver5.stopReasons.some(x => x.includes('Clinic liver rule: bilirubin')));
 const bilirubinAboveBFMReview = assess({...fixture, bilirubin: 3.5, biliULN: 1});
-assert.ok(bilirubinAboveBFMReview.stopReasons.some(x =>
+assert.equal(bilirubinAboveBFMReview.hardStop, false);
+assert.equal(bilirubinAboveBFMReview.candidate, null);
+assert.ok(bilirubinAboveBFMReview.warnings.some(x =>
   x.includes('BFM liver review threshold')));
 
 // A database outage must still return the calculated assessment and a failure message.
