@@ -2421,11 +2421,22 @@ header.app-header h1 {
   }
 
   cr.addEventListener('input', () => {
-    // Avoid expensive form restoration while the mobile number pad is open.
+    // Do not interrupt the mobile number pad for the first three digits.
     cr.value = cr.value.replace(/\D/g, '').slice(0, 4);
+    if (!/^\d{4}$/.test(cr.value)) return;
+    const completedCR = cr.value;
+    // Let the form's input/invalidation handlers finish before navigating.
+    // One completed 4-digit CR goes straight to Clinical / Calculate,
+    // avoiding three manual Next clicks. Do NOT submit or save automatically.
+    window.requestAnimationFrame(() => {
+      if (cr.value !== completedCR || !/^\d{4}$/.test(cr.value)) return;
+      cr.blur(); // Dispatches change for the existing session-only CR restore.
+      showTab(panels.length - 1);
+      calculateButton.scrollIntoView({behavior: 'smooth', block: 'center'});
+    });
   });
   cr.addEventListener('change', () => {
-    // Autofill only after leaving the CR field, preserving keyboard focus.
+    // Autofill only on field exit, not during digit entry.
     restoreCR(cr.value);
   });
 
