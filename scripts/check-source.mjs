@@ -39,6 +39,22 @@ for (const fn of ['function doGet(', 'function assessCase(', 'function assessAnd
   requireIncludes(code, 'backend function', fn);
 }
 requireIncludes(code, 'mobile viewport metadata', ".addMetaTag('viewport'");
+requireIncludes(code, 'timestamp-only usage logger', 'function logAppOpen_()');
+requireIncludes(code, 'public usage fetch', 'function getUsageStats()');
+requireIncludes(code, 'new usage sheet', "ss.insertSheet('UsageLog')");
+requireIncludes(code, 'log on page open', 'try { logAppOpen_(); }');
+requireIncludes(code, 'IST date grouping', "zone = 'Asia/Kolkata'");
+requireIncludes(html, 'faint lower-left usage icon', 'id="usageLogToggle"');
+requireIncludes(html, 'public usage panel', 'id="usageLogPanel"');
+requireIncludes(html, 'yesterday count', 'id="usageCount"');
+requireIncludes(html, 'recent times', 'id="usageRecent"');
+requireIncludes(script, 'fetch public usage stats', '.getUsageStats()');
+requireIncludes(html, 'subtle opacity', 'opacity: .15;');
+assert.ok(!code.includes('USAGE_LOG_PASSWORD') && !code.includes('USAGE_LOG_SECRET'),
+  'Public usage logs should require no password or access key');
+assert.ok(!script.includes('prompt(') && !script.includes('usagePassword'),
+  'Public usage panel must not ask for a password');
+
 requireIncludes(script, 'save automatically on Calculate', '.assessAndSave(input)');
 requireIncludes(script, 'retry failed saving', '.saveAssessment(input)');
 requireIncludes(script, 'Yes action removes saved record', "saveYes.addEventListener('click'");
