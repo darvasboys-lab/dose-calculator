@@ -371,8 +371,20 @@ function assessCase(d) {
   if (yes('infection')) stops.push('Serious infection reported');
   if (yes('jaundice')) stops.push('Clinical jaundice reported');
   if (yes('mucositis')) stops.push('Mucositis reported');
-  if (d.tpmt !== 'normal' || d.nudt15 !== 'normal') {
-    stops.push('Pharmacogenetic status requires individualised review');
+  // Explain the ACTUAL selected gene/status; unknown is NOT a positive
+  // variant test, and a variant is NOT the same as a confirmed poor metabolizer.
+  // This protects against interpreting a normal CBC as genetic clearance.
+  for (const gene of ['TPMT', 'NUDT15']) {
+    const status = d[gene.toLowerCase()];
+    if (status === 'unknown') {
+      stops.push(gene + ': UNKNOWN selected — normal thiopurine metabolism has not been documented. ' +
+        'Review the available gene result and individual 6-MP tolerance before using the CBC percentage. ' +
+        'Unknown does not mean a variant or an abnormal blood count.');
+    } else if (status === 'variant') {
+      stops.push(gene + ': VARIANT selected — a thiopurine pharmacogenetic change may alter 6-MP ' +
+        'tolerance and myelosuppression risk. The exact genotype/phenotype is not captured by this form. ' +
+        'Individualise 6-MP review; a normal CBC alone does not remove this flag.');
+    }
   }
   if (x.current6 === 0 || x.currentM === 0) {
     stops.push('Drug interruption/restart requires a clinician-directed plan and documented baseline dose');
@@ -406,14 +418,21 @@ function assessCase(d) {
   } else {
     status = 'DECREASE CANDIDATE';
   }
-  const candidate = factor === null ? null : {
-    mpDaily: Number((x.current6 * factor).toFixed(2)),
-    mtxWeekly: Number((x.currentM * factor).toFixed(2)),
-    changePercent: Math.round((factor - 1) * 100),
-    percentOfEntered: Math.round(factor * 100),
-    mpTabletsDaily: Number((x.current6 * factor / 50).toFixed(3)),
-    mtxTabletsWeekly: Number((x.currentM * factor / 2.5).toFixed(3))
-  };
+  // CBC-only arithmetic is kept separate from the clinical candidate.
+  // Under a hard stop this is an explanatory counterfactual, not a forced
+  // prescription, and it must NEVER populate saved candidate-dose columns.
+  function scaleEntered_(level) {
+    return {
+      mpDaily: Number((x.current6 * level).toFixed(2)),
+      mtxWeekly: Number((x.currentM * level).toFixed(2)),
+      changePercent: Math.round((level - 1) * 100),
+      percentOfEntered: Math.round(level * 100),
+      mpTabletsDaily: Number((x.current6 * level / 50).toFixed(3)),
+      mtxTabletsWeekly: Number((x.currentM * level / 2.5).toFixed(3))
+    };
+  }
+  const candidate = factor === null ? null : scaleEntered_(factor);
+  const cbcOnlyArithmetic = scaleEntered_(tableFactor);
   return {
     status,
     hardStop: stops.length > 0,
@@ -423,6 +442,7 @@ function assessCase(d) {
     rulesChecked: rules.length,
     rulesAffecting: rules.filter(r => r.affected).length,
     candidate: candidate,
+    cbcOnlyArithmetic: cbcOnlyArithmetic,
     bsa: Number(bsa.toFixed(3)),
     ref6: Number((bsa * CFG.reference6).toFixed(1)),
     refM: Number((bsa * CFG.referenceM).toFixed(1)),
