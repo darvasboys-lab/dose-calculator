@@ -145,8 +145,17 @@ function assessCase(d) {
   // validated dose-prescribing engine.
   const sixTablets = optional_(d, 'current6Tabs');
   const mtxTablets = optional_(d, 'currentMTabs');
+  if (sixTablets !== null && !Number.isInteger(sixTablets * 2)) {
+    throw new Error('Enter 6-MP tablets in whole or half tablets.');
+  }
+  if (mtxTablets !== null && !Number.isInteger(mtxTablets)) {
+    throw new Error('Enter MTX tablets as whole 2.5 mg tablets.');
+  }
   const sixMg = sixTablets === null ? number_(d, 'current6', 0, 1000) : sixTablets * 50;
   const mtxMg = mtxTablets === null ? number_(d, 'currentM', 0, 1000) : mtxTablets * 2.5;
+  if (sixMg > 1000 || mtxMg > 1000) {
+    throw new Error('Entered tablet total exceeds the supported dose range.');
+  }
   if (sixTablets !== null && d.current6 !== undefined && d.current6 !== '' &&
       Math.abs(number_(d, 'current6', 0, 1000) - sixMg) > 0.001) {
     throw new Error('6-MP tablet count does not match the entered mg/day.');
