@@ -541,6 +541,12 @@ input[type=range]:focus-visible {
 #result {
   display: none;
 }
+/* On mobile, do not collapse the result area's height while a number
+   input is focused. The sudden viewport reflow can dismiss soft keyboards. */
+#result.stale-while-typing {
+  visibility: hidden;
+  pointer-events: none;
+}
 
 #message {
   margin: 9px 2px 0;
@@ -1592,6 +1598,7 @@ header.app-header h1 {
   let disclaimerTimer = null;
   let disclaimerFirstShownAt = null;
   let disclaimerShownForVersion = null;
+  let staleResultWaitingForBlur = false;
 
   /* DEFAULT PRESELECTED VALUES */
 
@@ -1646,6 +1653,8 @@ header.app-header h1 {
 
         <input type="number"
           name="${name}"
+          inputmode="decimal"
+          enterkeyhint="next"
           min="${min}"
           max="${max}"
           step="any"
@@ -1660,6 +1669,8 @@ header.app-header h1 {
     return field(label, `
       <input name="${name}"
         type="number"
+        inputmode="decimal"
+        enterkeyhint="next"
         min="0"
         max="1000"
         step="any"
@@ -1685,6 +1696,7 @@ header.app-header h1 {
         <input name="${name}"
           type="number"
           inputmode="decimal"
+          enterkeyhint="next"
           min="${min}"
           max="${max}"
           step="any"
@@ -1738,6 +1750,7 @@ header.app-header h1 {
           <input name="demoId"
             type="text"
             inputmode="numeric"
+            enterkeyhint="next"
             pattern="[0-9]{4}"
             maxlength="4"
             autocomplete="off"
@@ -2317,8 +2330,24 @@ header.app-header h1 {
     calculateButton.textContent = 'Calculate Assessment';
   }
 
+  function finishStaleResultCollapse() {
+    if (!staleResultWaitingForBlur) return;
+    staleResultWaitingForBlur = false;
+    result.classList.remove('stale-while-typing');
+    result.removeAttribute('aria-hidden');
+    result.style.display = 'none';
+  }
+
   function invalidate() {
+    // No assessment exists yet: typing the initial form must not constantly
+    // rewrite, collapse or scroll the page. This was particularly disruptive
+    // to soft numeric keyboards inside the Apps Script iframe.
+    if (!busy && !saveBusy && !assessmentReady && !lastInput) return;
     const wasRunning = busy || saveBusy;
+    const focused = document.activeElement;
+    const typingNumber = !!focused && form.contains(focused) &&
+      focused.matches('input[type="number"], input[name="demoId"]');
+    const resultWasVisible = result.style.display === 'block';
     version++;
     clearRequestWatchdogs();
     resetTransientNotices();
@@ -2337,16 +2366,37 @@ header.app-header h1 {
     saveState.hidden = true;
     saveState.classList.remove('unsaved', 'pending');
     saveState.textContent = '';
-    result.style.display = 'none';
     resultLoading.hidden = true;
     output.hidden = true;
+    if (typingNumber && resultWasVisible) {
+      // Hide stale numbers without shrinking the document under an open
+      // numeric keyboard. Finish collapsing after focus leaves the field.
+      result.classList.add('stale-while-typing');
+      result.setAttribute('aria-hidden', 'true');
+      staleResultWaitingForBlur = true;
+    } else {
+      result.classList.remove('stale-while-typing');
+      result.removeAttribute('aria-hidden');
+      result.style.display = 'none';
+      staleResultWaitingForBlur = false;
+    }
     message.textContent = wasRunning
-      ? 'Values changed. Previous result is out of date; calculate again.'
+      ? 'Values changed. Calculate again.'
       : '';
   }
 
   form.addEventListener('input', invalidate);
   form.addEventListener('change', invalidate);
+  form.addEventListener('focusout', () => {
+    if (!staleResultWaitingForBlur) return;
+    window.setTimeout(() => {
+      const focused = document.activeElement;
+      if (!focused || !form.contains(focused) ||
+          !focused.matches('input[type="number"], input[name="demoId"]')) {
+        finishStaleResultCollapse();
+      }
+    }, 70);
+  });
 
   // Browser history may restore the page while an old request is pending.
   window.addEventListener('pageshow', e => {
@@ -2692,6 +2742,9 @@ header.app-header h1 {
     assessmentReady = false;
     calculateButton.disabled = true;
     calculateButton.textContent = 'Preparing assessment…';
+    staleResultWaitingForBlur = false;
+    result.classList.remove('stale-while-typing');
+    result.removeAttribute('aria-hidden');
     result.style.display = 'block';
     resultLoading.hidden = false;
     output.hidden = true;
