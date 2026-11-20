@@ -7,11 +7,14 @@
 The current source supports a straightforward single-doctor demonstration workflow:
 
 1. Open the existing Apps Script web-app URL. The small gold **Updated to version N** notice closes automatically after about three seconds (or tap it to dismiss).
-2. Enter values on the Patient, CBC, LFT Panel and Clinical tabs, then press **Calculate Assessment**.
-3. The server calculates the assessment and writes the snapshot to the attached Google Sheet.
-4. The result shows **Saved automatically** only after the backend confirms that both `AssessmentHistory` and `LatestByCR` were updated. If saving fails, it still shows the calculation and offers **Retry save**.
+2. Enter a four-digit **CR** at the top of Patient Details, then enter age, height, weight, prescribed doses and the other values on the Patient, CBC, LFT Panel and Clinical tabs.
+3. Press **Calculate Assessment**. This calls the read-only `assessCase()` function and **does not save** anything to Google Sheets.
+4. After the result appears, choose **Save to Google Sheets? Yes (green) / No (red)**. Only **Yes** calls `assessAndSave()`. **No** leaves the result visible without writing a row.
+5. The result shows **Saved to Google Sheets** only after the backend confirms both `AssessmentHistory` and `LatestByCR` were updated. A failed save offers **Retry save** using the same request ID.
 
-The browser uses `assessAndSave()` to calculate and save, and `saveAssessment()` to retry with the same request ID. The backend retains append-only history, four-digit CRs (including leading zeroes), and safety hard stops. A hard-stop row is saved without candidate-dose values. Existing `DemoCases` and older records remain unchanged by deployment.
+**Previous CR values:** After a successful Yes/save, the entered form values are also cached for that *same browser tab/session*. Entering that four-digit CR again restores age, height, weight, doses, CBC, LFT and clinical choices, and recalculates the visible BSA. This is **not a Google Sheets record lookup**: older Sheet records, other devices and new browser sessions are not available through public CR autofill. Four digits are easy to guess; anonymously reading Google Sheets records by CR would expose stored clinical information. Cache only fictional examples.
+
+The browser uses `assessCase()` for the preview, `assessAndSave()` after Yes, and `saveAssessment()` to retry with the same request ID. The backend retains append-only history, four-digit CRs (including leading zeroes), and safety hard stops. A hard-stop row is saved without candidate-dose values. Existing `DemoCases` and older records remain unchanged by deployment.
 
 **Public-link trade-off:** There is deliberately **no account sign-in, doctor key, password or visitor identity check** on saving. The script executes as its owner; anyone who obtains the public web-app URL can submit and potentially overwrite a `LatestByCR` entry. Rows are labelled `Anonymous web submission`, not falsely attributed to the owner. Keep the Sheet itself private, avoid sharing the URL widely and **use fictional data only**. This is not suitable for real patient data without appropriate authenticated access and clinical/privacy review.
 
