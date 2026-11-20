@@ -2291,7 +2291,11 @@ header.app-header h1 {
   }
 
   cr.addEventListener('input', () => {
+    // Avoid expensive form restoration while the mobile number pad is open.
     cr.value = cr.value.replace(/\D/g, '').slice(0, 4);
+  });
+  cr.addEventListener('change', () => {
+    // Autofill only after leaving the CR field, preserving keyboard focus.
     restoreCR(cr.value);
   });
 
