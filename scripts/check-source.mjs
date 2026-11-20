@@ -27,7 +27,7 @@ assert.ok(script, 'Frontend script missing');
 new Function(code);
 new Function(script);
 
-for (const label of ['Patient', 'CBC', 'LFT Panel', 'Clinical']) {
+for (const label of ['Patient', 'CBC', 'LFT / RFT', 'Clinical']) {
   requireIncludes(html, 'calculator tab', "'" + label + "'");
 }
 for (const id of ['tabs', 'result', 'output', 'stopBox', 'stopReasons',
@@ -88,7 +88,16 @@ assert.ok(!html.includes('PROTOTYPE ASSESSMENT'), 'Internal assessment label mus
 assert.ok(!html.includes("'Entered dose'"), 'Redundant entered-dose tiles must be removed');
 assert.ok(!html.includes('MAINTAIN CANDIDATE'), 'Backend shorthand must not be shown in the UI');
 
-requireIncludes(html, '0%-adjustment explanation', 'the CBC rule applied 0%');
+requireIncludes(html, 'clearly named table dose percentage', 'TABLE LEVEL');
+requireIncludes(html, 'traceability summary', 'Rules applied');
+requireIncludes(html, 'rules-affecting count', 'r.rulesAffecting');
+requireIncludes(html, 'tablets for 6-MP', "'current6Tabs'");
+requireIncludes(html, 'tablets for MTX', "'currentMTabs'");
+requireIncludes(html, 'optional RFT creatinine', "'creatinine'");
+requireIncludes(html, 'optional LFT selection', 'Transaminases rising? (optional)');
+requireIncludes(code, 'WBC target threshold', 'x.wbc <= 3000');
+requireIncludes(code, 'lymphocyte threshold', 'x.alc < 300');
+requireIncludes(code, 'platelet stop threshold', 'x.platelets < 50000');
 requireIncludes(html, 'visible multiplication', "' × ' + factor + ' = '");
 requireIncludes(html, '3-second noncritical notice timer', 'Math.max(0, 3000 - (Date.now() - disclaimerFirstShownAt))');
 requireIncludes(html, 'transient caution wrapper', '#output.report-notices-dismissed .report-disclaimer');
@@ -114,24 +123,50 @@ const stable = assess(fixture);
 assert.equal(stable.candidate.mpDaily, 35);
 assert.equal(stable.candidate.mtxWeekly, 20);
 assert.equal(stable.candidate.changePercent, 0);
+assert.equal(stable.candidate.percentOfEntered, 100);
 assert.equal(stable.bsa, 0.799);
 assert.equal(stable.ref6, 40);
 assert.equal(stable.refM, 16);
+assert.equal(stable.rulesChecked, 7);
 
-const increase = assess({...fixture,
-  wbc: 5000, anc: 2000, prevWbc: 4500, prevAnc: 1800});
-assert.equal(increase.candidate.mpDaily, 38.5);
-assert.equal(increase.candidate.mtxWeekly, 22);
-assert.equal(increase.candidate.changePercent, 10);
+const increase = assess({...fixture, wbc: 3500, anc: 1600,
+  alc: 900, prevWbc: 4500, prevAnc: 1800});
+assert.equal(increase.candidate.mpDaily, 52.5);
+assert.equal(increase.candidate.mtxWeekly, 30);
+assert.equal(increase.candidate.changePercent, 50);
+assert.equal(increase.candidate.percentOfEntered, 150);
 
-const decrease = assess({...fixture, anc: 600});
-assert.equal(decrease.candidate.mpDaily, 31.5);
-assert.equal(decrease.candidate.mtxWeekly, 18);
-assert.equal(decrease.candidate.changePercent, -10);
+const half = assess({...fixture, wbc: 1500, anc: 1000, alc: 400});
+assert.equal(half.candidate.mpDaily, 17.5);
+assert.equal(half.candidate.mtxWeekly, 10);
+assert.equal(half.candidate.percentOfEntered, 50);
 
-const hardStop = assess({...fixture, anc: 400});
-assert.equal(hardStop.hardStop, true);
-assert.equal(hardStop.candidate, null);
+const lymphocyteCap = assess({...fixture, wbc: 3500, anc: 1600, alc: 200});
+assert.equal(lymphocyteCap.candidate.percentOfEntered, 50);
+assert.ok(lymphocyteCap.rules.find(r => r.id === 'ALC').affected);
+
+const tablets = assess({...fixture, wbc: 3500, anc: 1600,
+  current6: 50, currentM: 10, current6Tabs: 1, currentMTabs: 4});
+assert.equal(tablets.candidate.mpTabletsDaily, 1.5);
+assert.equal(tablets.candidate.mtxTabletsWeekly, 6);
+
+const optionalLft = assess({...fixture, bilirubin: '',
+  biliULN: '', ast: '', alt: '', transULN: '', rising: ''});
+assert.equal(optionalLft.hardStop, false);
+assert.ok(optionalLft.rules.find(r => r.id === 'LFT').detail.includes('Not entered'));
+
+const wbcStop = assess({...fixture, wbc: 900, anc: 500, alc: 200});
+assert.equal(wbcStop.hardStop, true);
+assert.equal(wbcStop.candidate, null);
+const plateletStop = assess({...fixture, platelets: 49000});
+assert.equal(plateletStop.hardStop, true);
+assert.equal(plateletStop.candidate, null);
+const ancStop = assess({...fixture, anc: 400});
+assert.equal(ancStop.hardStop, true);
+assert.equal(ancStop.candidate, null);
+const lowAnc = assess({...fixture, anc: 650});
+assert.equal(lowAnc.hardStop, false);
+assert.equal(lowAnc.candidate, null);
 
 // A database outage must still return the calculated assessment and a failure message.
 const failedSave = runInNewContext(code + '\nassessAndSave(' +
@@ -142,4 +177,4 @@ assert.ok(failedSave.saveError, 'No error message when Sheets saving is unavaila
 
 console.log('PHO source checks passed: valid JS, clean document start, 4 tabs,');
 console.log('mobile metadata, hard-stop interface and simple Sheet saving.');
-console.log('Synthetic arithmetic checks: unchanged, +10%, -10%, hard stop, and BSA references passed.');
+console.log('Synthetic arithmetic checks: 50/100/150% levels, ALC cap, tablets, optional LFT, and hard stops passed.');
