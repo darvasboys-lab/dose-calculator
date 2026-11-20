@@ -1000,17 +1000,34 @@ select[name="rising"] {
   font-size: 11.5px;
 }
 .report-rules-list span {
-  color: #6b7e8c;
+  color: #758797;
   font-size: 11px;
   line-height: 1.5;
 }
 .report-rules-list li.affects strong { color: #8b5d22; }
+.report-rules-list .report-rule-current,
+.report-rules-list li.affects .report-rule-current {
+  display: block;
+  margin: 3px 0 4px;
+  color: #213447;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+}
+.report-rules-list .report-rule-muted {
+  display: block;
+  color: #8493a1;
+  font-size: 11px;
+  font-weight: 450;
+  line-height: 1.5;
+}
 .report-rules-list .report-rule-outcome {
   display: block;
   margin: 5px 0 0;
-  color: #2d586b;
-  font-size: 11.5px;
-  font-weight: 710;
+  color: #798a98;
+  font-size: 11px;
+  font-weight: 500;
   line-height: 1.5;
 }
 .report-rules-list .report-rule-source {
@@ -2709,7 +2726,34 @@ header.app-header h1 {
       r.rules.forEach(entry => {
         const line = element('li', entry.affected ? 'affects' : '');
         line.appendChild(element('strong', '', entry.title));
-        line.appendChild(element('span', '', entry.detail));
+
+        // Show the patient's CURRENT values prominently before the
+        // lighter rule text. Keep the server-supplied clinical rule unchanged.
+        const cbcRule = ['WBC', 'ANC', 'ALC', 'PLT'].includes(entry.id);
+        const separator = cbcRule ? entry.detail.indexOf('; ') : -1;
+        let currentValue = '';
+        let matchingRule = entry.detail;
+        if (separator >= 0) {
+          currentValue = entry.detail.slice(0, separator);
+          matchingRule = entry.detail.slice(separator + 2);
+        } else if (entry.id === 'LFT') {
+          const lftValues = [];
+          if (input.alt !== undefined && input.alt !== '')
+            lftValues.push('ALT ' + input.alt + ' U/L');
+          if (input.bilirubin !== undefined && input.bilirubin !== '')
+            lftValues.push('Bilirubin ' + input.bilirubin + ' mg/dL');
+          if (input.ast !== undefined && input.ast !== '')
+            lftValues.push('AST ' + input.ast + ' U/L');
+          currentValue = lftValues.join(' · ');
+        } else if (entry.id === 'KFT' &&
+                   input.creatinine !== undefined && input.creatinine !== '') {
+          currentValue = 'Creatinine ' + input.creatinine + ' mg/dL';
+          matchingRule = 'Recorded; no KFT dose threshold supplied';
+        }
+        if (currentValue) {
+          line.appendChild(element('strong', 'report-rule-current', currentValue));
+        }
+        line.appendChild(element('span', 'report-rule-muted', matchingRule));
         if (entry.outcome) {
           line.appendChild(element('p', 'report-rule-outcome', entry.outcome));
         }
