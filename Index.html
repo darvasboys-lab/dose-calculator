@@ -1557,6 +1557,63 @@ header.app-header h1 {
     font-size: clamp(19px, 5.2vw, 22px);
   }
 }
+/* Very faint, optional public usage-log button in the bottom-left. */
+.usage-log-toggle {
+  position: fixed;
+  left: 7px;
+  bottom: max(7px, env(safe-area-inset-bottom));
+  z-index: 900;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  padding: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #506275;
+  opacity: .15;
+  font-size: 20px;
+  cursor: pointer;
+}
+.usage-log-toggle:hover,
+.usage-log-toggle:focus-visible,
+.usage-log-toggle[aria-expanded="true"] { opacity: .65; }
+.usage-log-toggle:focus-visible { outline: 2px solid #8b9caa; }
+.usage-log-panel[hidden] { display: none !important; }
+.usage-log-panel {
+  position: fixed;
+  left: 9px;
+  bottom: max(42px, calc(env(safe-area-inset-bottom) + 34px));
+  z-index: 900;
+  width: min(315px, calc(100vw - 18px));
+  max-height: 57vh;
+  overflow-y: auto;
+  padding: 15px 16px;
+  background: #fff;
+  color: #354c60;
+  border: 1px solid #e6ebf0;
+  border-radius: 13px;
+  box-shadow: 0 9px 25px rgba(37, 56, 72, .12);
+  font-size: 12px;
+}
+.usage-log-panel h3 { margin: 0 0 7px; font-size: 14px; }
+.usage-log-panel p { margin: 7px 0; }
+.usage-log-panel ol {
+  margin: 8px 0 0;
+  padding-left: 21px;
+  color: #617284;
+  line-height: 1.7;
+  font-variant-numeric: tabular-nums;
+}
+.usage-log-panel .usage-count {
+  font-weight: 800;
+  color: #263d52;
+  font-size: 18px;
+}
+@media print {
+  .usage-log-toggle, .usage-log-panel { display: none !important; }
+}
 </style>
 </head>
 
@@ -1644,6 +1701,20 @@ header.app-header h1 {
 </section>
 
 </main>
+
+<button id="usageLogToggle" class="usage-log-toggle" type="button"
+  aria-label="Open usage log" aria-controls="usageLogPanel"
+  aria-expanded="false" title="Usage log">◷</button>
+<section id="usageLogPanel" class="usage-log-panel" hidden
+  aria-label="App usage log">
+  <h3>Usage log</h3>
+  <p>App openings only · India time (IST)</p>
+  <p>Yesterday: <strong id="usageCount" class="usage-count">—</strong> opens
+    <span id="usageYesterday"></span></p>
+  <p>Recent opens</p>
+  <ol id="usageRecent"></ol>
+  <p id="usageStatus" role="status" aria-live="polite"></p>
+</section>
 
 <script>
 (function () {
@@ -3216,6 +3287,47 @@ header.app-header h1 {
       invalidate();
       showTab(0);
     });
+
+  /* PUBLIC USAGE LOG — timestamps only; no password or patient data */
+
+  const usageToggle = document.getElementById('usageLogToggle');
+  const usagePanel = document.getElementById('usageLogPanel');
+  const usageCount = document.getElementById('usageCount');
+  const usageYesterday = document.getElementById('usageYesterday');
+  const usageRecent = document.getElementById('usageRecent');
+  const usageStatus = document.getElementById('usageStatus');
+  usageToggle.addEventListener('click', () => {
+    const opening = usagePanel.hidden;
+    usagePanel.hidden = !opening;
+    usageToggle.setAttribute('aria-expanded', String(opening));
+    if (!opening) return;
+    usageStatus.textContent = 'Loading usage times…';
+    usageRecent.replaceChildren();
+    if (!(window.google && google.script && google.script.run)) {
+      usageStatus.textContent = 'Usage log is available in the published app.';
+      return;
+    }
+    google.script.run
+      .withSuccessHandler(stats => {
+        if (usagePanel.hidden) return;
+        usageCount.textContent = String(stats.yesterdayCount);
+        usageYesterday.textContent = '(' + stats.yesterday + ')';
+        usageRecent.replaceChildren();
+        (stats.recent || []).forEach(time => {
+          const row = document.createElement('li');
+          row.textContent = time + ' IST';
+          usageRecent.appendChild(row);
+        });
+        usageStatus.textContent = (stats.recent || []).length
+          ? '' : 'No app openings have been logged yet.';
+      })
+      .withFailureHandler(err => {
+        if (usagePanel.hidden) return;
+        usageStatus.textContent = 'Could not load usage log: ' +
+          ((err && err.message) || String(err));
+      })
+      .getUsageStats();
+  });
 
   /* PRINT */
 
