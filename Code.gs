@@ -19,7 +19,7 @@ const CFG = Object.freeze({
   ancLow: 750,
   ancHigh: 1500,
   adjustment: 0.10,
-  algorithmVersion: 'PROTOTYPE-v5'
+  algorithmVersion: 'PROPOSED-CBC-2026-11-20'
 });
 
 const HISTORY_HEADERS = [
@@ -139,24 +139,46 @@ function optional_(d, key) {
 }
 
 function assessCase(d) {
+  // PROPOSED MAINTENANCE TABLE: illustrative logic for synthetic testing only.
+  // These percentage levels refer here to the ENTERED doses, which may differ
+  // from a protocol's standard/previously attained 100% dose. This is not a
+  // validated dose-prescribing engine.
+  const sixTablets = optional_(d, 'current6Tabs');
+  const mtxTablets = optional_(d, 'currentMTabs');
+  const sixMg = sixTablets === null ? number_(d, 'current6', 0, 1000) : sixTablets * 50;
+  const mtxMg = mtxTablets === null ? number_(d, 'currentM', 0, 1000) : mtxTablets * 2.5;
+  if (sixTablets !== null && d.current6 !== undefined && d.current6 !== '' &&
+      Math.abs(number_(d, 'current6', 0, 1000) - sixMg) > 0.001) {
+    throw new Error('6-MP tablet count does not match the entered mg/day.');
+  }
+  if (mtxTablets !== null && d.currentM !== undefined && d.currentM !== '' &&
+      Math.abs(number_(d, 'currentM', 0, 1000) - mtxMg) > 0.001) {
+    throw new Error('MTX tablet count does not match the entered mg/week.');
+  }
   const x = {
     age: number_(d, 'age', 0, 25),
     height: number_(d, 'height', 35, 230),
     weight: number_(d, 'weight', 1, 200),
-    current6: number_(d, 'current6', 0, 1000),
-    currentM: number_(d, 'currentM', 0, 1000),
+    current6: sixMg, currentM: mtxMg,
     wbc: number_(d, 'wbc', 0, 200000),
     anc: number_(d, 'anc', 0, 200000),
     alc: number_(d, 'alc', 0, 200000),
     platelets: number_(d, 'platelets', 0, 2000000),
     prevWbc: optional_(d, 'prevWbc'),
     prevAnc: optional_(d, 'prevAnc'),
-    bilirubin: number_(d, 'bilirubin', 0, 100),
-    biliULN: number_(d, 'biliULN', 0.01, 20),
-    ast: number_(d, 'ast', 0, 20000),
-    alt: number_(d, 'alt', 0, 20000),
-    transULN: number_(d, 'transULN', 1, 1000)
+    bilirubin: optional_(d, 'bilirubin'),
+    biliULN: optional_(d, 'biliULN'),
+    ast: optional_(d, 'ast'),
+    alt: optional_(d, 'alt'),
+    transULN: optional_(d, 'transULN'),
+    creatinine: optional_(d, 'creatinine')
   };
+  if (x.biliULN !== null && x.biliULN < 0.01) {
+    throw new Error('Bilirubin ULN must be greater than zero.');
+  }
+  if (x.transULN !== null && x.transULN < 1) {
+    throw new Error('AST/ALT ULN must be at least 1.');
+  }
   const options = {
     rising: ['yes', 'no'], fever: ['yes', 'no'],
     infection: ['yes', 'no'], jaundice: ['yes', 'no'],
@@ -166,6 +188,8 @@ function assessCase(d) {
     adherence: ['good', 'missed', 'unknown']
   };
   Object.keys(options).forEach(key => {
+    // Rising LFT is optional when no liver panel is available.
+    if (key === 'rising' && (d[key] === undefined || d[key] === '')) return;
     if (!options[key].includes(d[key])) {
       throw new Error('Please select a valid value for ' + key);
     }
@@ -173,24 +197,96 @@ function assessCase(d) {
   if (x.anc > x.wbc || x.alc > x.wbc || x.anc + x.alc > x.wbc * 1.15) {
     throw new Error('CBC inconsistent: check WBC, ANC and ALC units.');
   }
+
   const bsa = Math.sqrt(x.height * x.weight / 3600);
   const stops = [];
   const warnings = [];
+  const rules = [];
   const yes = key => d[key] === 'yes';
+  function rule(id, title, detail, affected) {
+    rules.push({id: id, title: title, detail: detail, affected: !!affected});
+  }
 
-  // These flags stop *automated dose suggestions*, NOT necessarily medication.
-  // Actual decisions to hold, reduce or resume therapy belong to the oncologist.
-  if (x.wbc < 1500) stops.push('WBC below 1,500/µL');
-  if (x.anc < 500) stops.push('ANC below 500/µL');
-  if (x.alc < 300) stops.push('ALC below 300/µL');
-  if (x.platelets < 50000) stops.push('Platelets below 50,000/µL');
-  if (x.bilirubin > 3 * x.biliULN) stops.push('Bilirubin above 3 × ULN');
-  if ((x.ast > 10 * x.transULN || x.alt > 10 * x.transULN) && yes('rising')) {
-    stops.push('Rising AST or ALT above 10 × ULN');
+  let wbcFactor = 1;
+  let wbcLabel;
+  if (x.wbc < 1000) {
+    wbcFactor = 0; wbcLabel = 'Below 1.0 × 10⁹/L → table level 0%';
+    stops.push('WBC below 1,000/µL — protocol lists 0%; clinician review of interruption required');
+  } else if (x.wbc <= 2000) {
+    wbcFactor = 0.5; wbcLabel = '1.0–2.0 × 10⁹/L → table level 50%';
+  } else if (x.wbc <= 3000) {
+    wbcFactor = 1; wbcLabel = 'Above 2.0–3.0 × 10⁹/L → table level 100%';
+  } else {
+    wbcFactor = 1.5; wbcLabel = 'Above 3.0 × 10⁹/L → up to 150% of entered dose';
   }
-  if (x.ast > 20 * x.transULN || x.alt > 20 * x.transULN) {
-    stops.push('AST or ALT above 20 × ULN');
+  rule('WBC', 'White blood cells',
+    (x.wbc / 1000).toFixed(2) + ' × 10⁹/L; ' + wbcLabel, true);
+
+  if (x.anc < 500) {
+    stops.push('ANC below 500/µL — clinician review required');
+  } else if (x.anc < 750) {
+    warnings.push('ANC below the stated 750–1,500/µL target; no automated candidate.');
+  } else if (x.anc > 1500) {
+    warnings.push('ANC above the stated 750–1,500/µL target; review with WBC trend.');
   }
+  rule('ANC', 'Neutrophils (ANC)',
+    x.anc.toLocaleString('en-US') + '/µL; ' +
+    (x.anc >= 750 && x.anc <= 1500 ? 'within stated target (750–1,500/µL)' :
+      'outside stated target (750–1,500/µL)'), x.anc < 750);
+
+  const alcLow = x.alc < 300;
+  const tableFactor = alcLow ? Math.min(wbcFactor, 0.5) : wbcFactor;
+  rule('ALC', 'Lymphocytes (ALC)',
+    x.alc.toLocaleString('en-US') + '/µL; ' +
+    (alcLow ? 'below 300/µL → 50% level limits the WBC result' :
+      '300/µL or higher → no additional 50% limit'), alcLow);
+
+  if (x.platelets < 50000) {
+    stops.push('Platelets below 50,000/µL — table level 0%; clinician review required');
+  }
+  if (x.platelets >= 50000 && x.platelets <= 100000) {
+    warnings.push('If therapy was held for low platelets, the supplied protocol requires >100,000/µL before considering restart.');
+  }
+  rule('PLT', 'Platelets',
+    x.platelets.toLocaleString('en-US') + '/µL; ' +
+    (x.platelets < 50000 ? 'below 50,000/µL → table level 0%' :
+      x.platelets <= 100000
+        ? '50,000–100,000/µL; below the stated >100,000/µL restart threshold'
+        : 'above 100,000/µL; platelet recovery threshold met (not independent restart clearance)'),
+    x.platelets < 50000 || x.platelets <= 100000);
+
+  const anyLft = [x.bilirubin, x.ast, x.alt].some(v => v !== null);
+  const biliReady = x.bilirubin !== null && x.biliULN !== null;
+  const transReady = x.transULN !== null && (x.ast !== null || x.alt !== null);
+  if (biliReady && x.bilirubin > 3 * x.biliULN) {
+    stops.push('Bilirubin above 3 × ULN');
+  }
+  if (transReady) {
+    const above10 = (x.ast !== null && x.ast > 10 * x.transULN) ||
+                    (x.alt !== null && x.alt > 10 * x.transULN);
+    const above20 = (x.ast !== null && x.ast > 20 * x.transULN) ||
+                    (x.alt !== null && x.alt > 20 * x.transULN);
+    if (above10 && yes('rising')) stops.push('Rising AST/ALT above 10 × ULN');
+    if (above20) stops.push('AST/ALT above 20 × ULN');
+  }
+  if (!anyLft) {
+    rule('LFT', 'Liver tests', 'Not entered; LFT checks not assessed', false);
+  } else {
+    if ((x.bilirubin !== null && !biliReady) ||
+        ((x.ast !== null || x.alt !== null) && !transReady)) {
+      warnings.push('LFT entered without its upper-normal reference; full LFT threshold assessment is unavailable.');
+    }
+    rule('LFT', 'Liver tests',
+      'Optional results checked where values and ULN were supplied' +
+      ((!biliReady || !transReady) ? '; incomplete reference ranges' : ''),
+      (biliReady || transReady));
+  }
+  rule('RFT', 'Renal tests',
+    x.creatinine === null ? 'Not entered; renal dosing rules not supplied' :
+      'Creatinine ' + x.creatinine + ' mg/dL recorded; no renal dosing threshold supplied',
+    false);
+
+  // Existing conservative safety checks remain separate from CBC table.
   if (yes('fever')) stops.push('Fever reported: clinical assessment required');
   if (yes('infection')) stops.push('Serious infection reported');
   if (yes('jaundice')) stops.push('Clinical jaundice reported');
@@ -198,9 +294,8 @@ function assessCase(d) {
   if (d.tpmt !== 'normal' || d.nudt15 !== 'normal') {
     stops.push('Pharmacogenetic status requires individualised review');
   }
-
   if (x.current6 === 0 || x.currentM === 0) {
-    stops.push('Drug interruption/restart requires a clinician-directed plan');
+    stops.push('Drug interruption/restart requires a clinician-directed plan and documented baseline dose');
   }
   if (x.age > 18) {
     stops.push('Confirm applicability of the paediatric protocol');
@@ -208,48 +303,46 @@ function assessCase(d) {
   if (d.adherence !== 'good') {
     warnings.push('Adherence not confirmed; do not auto-titrate');
   }
-  if (x.current6 > 0 && x.currentM > 0 &&
-      Math.abs(x.current6 / x.currentM - 2.5) > 0.25) {
-    warnings.push('Current 6-MP:MTX dose ratio differs from 2.5:1; review');
-  }
+  rule('SAFETY', 'Clinical safety checks',
+    stops.length ? stops.length + ' review/hard-stop reason(s) recorded' :
+      'No configured symptom/genetic safety stop triggered',
+    stops.length > 0);
 
-  let status = 'REVIEW REQUIRED';
-  let factor = null;
+  let factor = tableFactor;
+  if (stops.length || d.adherence !== 'good' || x.anc < 750) factor = null;
+  let status;
   if (stops.length) {
     status = 'HARD STOP — CLINICIAN REVIEW';
-  } else if (d.adherence !== 'good') {
+  } else if (factor === null) {
     status = 'REVIEW REQUIRED';
-  } else if (x.wbc >= CFG.wbcLow && x.wbc <= CFG.wbcHigh &&
-             x.anc >= CFG.ancLow && x.anc <= CFG.ancHigh) {
+  } else if (factor === 1) {
     status = 'MAINTAIN CANDIDATE';
-    factor = 1;
-  } else if (x.wbc > CFG.wbcHigh && x.anc > CFG.ancHigh &&
-             x.prevWbc !== null && x.prevWbc > CFG.wbcHigh &&
-             x.prevAnc !== null && x.prevAnc > CFG.ancHigh) {
+  } else if (factor > 1) {
     status = 'INCREASE CANDIDATE';
-    factor = 1 + CFG.adjustment;
-  } else if (x.wbc >= CFG.wbcLow && x.anc >= 500 && x.anc < CFG.ancLow) {
-    status = 'DECREASE CANDIDATE';
-    factor = 1 - CFG.adjustment;
   } else {
-    warnings.push('Discordant CBC or insufficient trend; clinical review');
+    status = 'DECREASE CANDIDATE';
   }
-
   const candidate = factor === null ? null : {
-    mpDaily: Math.round(x.current6 * factor * 10) / 10,
-    mtxWeekly: Math.round(x.currentM * factor * 10) / 10,
-    changePercent: Math.round((factor - 1) * 100)
+    mpDaily: Number((x.current6 * factor).toFixed(2)),
+    mtxWeekly: Number((x.currentM * factor).toFixed(2)),
+    changePercent: Math.round((factor - 1) * 100),
+    percentOfEntered: Math.round(factor * 100),
+    mpTabletsDaily: Number((x.current6 * factor / 50).toFixed(3)),
+    mtxTabletsWeekly: Number((x.currentM * factor / 2.5).toFixed(3))
   };
   return {
     status,
     hardStop: stops.length > 0,
     stopReasons: stops,
-    warnings,
-    candidate,
+    warnings: warnings,
+    rules: rules,
+    rulesChecked: rules.length,
+    rulesAffecting: rules.filter(r => r.affected).length,
+    candidate: candidate,
     bsa: Number(bsa.toFixed(3)),
     ref6: Number((bsa * CFG.reference6).toFixed(1)),
     refM: Number((bsa * CFG.referenceM).toFixed(1)),
-    note: 'Assessment only. Not an authorised prescription.'
+    note: 'Proposed protocol simulation only. Not an authorised prescription. Tablet fractions require formulation-specific verification.'
   };
 }
 
