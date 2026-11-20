@@ -109,7 +109,58 @@ function requireAuthorisedUser_() {
   return email;
 }
 
+/* Public, timestamp-only usage counter. No accounts, keys or patient fields. */
+function logAppOpen_() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) throw new Error('Usage logging busy.');
+  try {
+    const ss = workbook_();
+    let sheet = ss.getSheetByName('UsageLog');
+    if (!sheet) {
+      sheet = ss.insertSheet('UsageLog');
+      sheet.getRange(1, 1).setValue('OpenedAt');
+      sheet.setFrozenRows(1);
+    }
+    sheet.appendRow([new Date()]);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/* Public usage totals: dates/times only; no CR, patient or visitor data. */
+function getUsageStats() {
+  const zone = 'Asia/Kolkata';
+  const now = new Date();
+  const yesterday = Utilities.formatDate(
+    new Date(now.getTime() - 86400000), zone, 'yyyy-MM-dd');
+  const ss = workbook_();
+  const sheet = ss.getSheetByName('UsageLog');
+  const lastRow = sheet ? sheet.getLastRow() : 0;
+  const times = lastRow > 1
+    ? sheet.getRange(2, 1, lastRow - 1, 1).getValues()
+    : [];
+  let yesterdayCount = 0;
+  const recent = [];
+  for (let i = times.length - 1; i >= 0; i--) {
+    const raw = times[i][0];
+    if (!raw) continue;
+    const openedAt = raw instanceof Date ? raw : new Date(raw);
+    if (!Number.isFinite(openedAt.getTime())) continue;
+    if (Utilities.formatDate(openedAt, zone, 'yyyy-MM-dd') === yesterday) {
+      yesterdayCount++;
+    }
+    if (recent.length < 20) {
+      recent.push(Utilities.formatDate(openedAt, zone, 'dd MMM yyyy, hh:mm a'));
+    }
+  }
+  return {yesterday: yesterday, yesterdayCount: yesterdayCount,
+    recent: recent, timeZone: 'IST'};
+}
+
 function doGet() {
+  // Log an app opening, not a patient assessment. Logging must never
+  // block the calculator if the Sheet is temporarily unavailable.
+  try { logAppOpen_(); } catch (err) { console.error('Usage log:', err); }
   // Apps Script ignores viewport meta tags written directly in Index.html.
   // Register it on HtmlOutput to render at device width on mobile.
   return HtmlService.createHtmlOutputFromFile('Index')
@@ -117,6 +168,7 @@ function doGet() {
     .setTitle('PHO ALL Calculator');
 }
 function showCalculator() {
+  try { logAppOpen_(); } catch (err) { console.error('Usage log:', err); }
   SpreadsheetApp.getUi().showSidebar(
     HtmlService.createHtmlOutputFromFile('Index')
       .addMetaTag('viewport', 'width=device-width, initial-scale=1')
