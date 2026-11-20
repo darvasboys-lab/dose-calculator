@@ -35,22 +35,28 @@ for (const id of ['tabs', 'result', 'output', 'stopBox', 'stopReasons',
   requireIncludes(html, 'element ID', 'id="' + id + '"');
 }
 for (const fn of ['function doGet(', 'function assessCase(', 'function assessAndSave(',
-  'function saveAssessment(', 'function persistAssessment_(']) {
+  'function saveAssessment(', 'function persistAssessment_', 'function removeSavedAssessment(']) {
   requireIncludes(code, 'backend function', fn);
 }
 requireIncludes(code, 'mobile viewport metadata', ".addMetaTag('viewport'");
-requireIncludes(script, 'preview without saving', '.assessCase(input)');
-requireIncludes(script, 'explicit Yes save', '.assessAndSave(input)');
+requireIncludes(script, 'save automatically on Calculate', '.assessAndSave(input)');
 requireIncludes(script, 'retry failed saving', '.saveAssessment(input)');
-requireIncludes(script, 'Yes action', "saveYes.addEventListener('click'");
-requireIncludes(script, 'No action', "saveNo.addEventListener('click'");
-requireIncludes(script, 'save gate', 'if (!assessmentReady || saved || saveBusy || !lastInput) return;');
-requireIncludes(html, 'opt-in prompt after results', 'Save to Google Sheets?');
-requireIncludes(html, 'Yes green', '.save-choice-btn.yes { background: #188155; }');
-requireIncludes(html, 'No red', '.save-choice-btn.no { background: #c33f47; }');
-const beforeYes = script.split("saveYes.addEventListener('click'")[0];
-assert.ok(!beforeYes.includes('.assessAndSave(input)'),
-  'Assessment submit must not write to Sheets before explicit Yes');
+requireIncludes(script, 'Yes action removes saved record', "saveYes.addEventListener('click'");
+requireIncludes(script, 'No action keeps saved record', "saveNo.addEventListener('click'");
+requireIncludes(script, 'exact-assessment removal', '.removeSavedAssessment(input)');
+requireIncludes(script, 'removal gate', 'if (!assessmentReady || !saved || saveBusy || !lastInput) return;');
+requireIncludes(html, 'removal question', 'Remove from Sheets?');
+requireIncludes(html, 'Yes removes (red)', 'id="saveYes" class="save-choice-btn no"');
+requireIncludes(html, 'No retains (green)', 'id="saveNo" class="save-choice-btn yes"');
+assert.ok(script.indexOf('.assessAndSave(input)') <
+  script.indexOf("saveYes.addEventListener('click'"),
+  'Calculate must save before the removal choice');
+assert.ok(!html.includes('Save to Google Sheets?'),
+  'Old save-first prompt must be removed');
+requireIncludes(code, 'remove exact request identity', 'String(target[3]) !== inputJSON');
+requireIncludes(code, 'retain HistoryRow pointer stability', 'clearContent()');
+requireIncludes(code, 'restore previous CR entry', 'previousRow');
+requireIncludes(code, 'no CR-only removal', 'Missing assessment ID; removal refused.');
 assert.ok(!script.includes('fetchSavedByCR('),
   'Anonymous four-digit CR must not retrieve stored Sheet records');
 requireIncludes(code, 'backend Sheets history writer', 'persistAssessment_(d, assessment)');
