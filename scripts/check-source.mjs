@@ -98,7 +98,7 @@ requireIncludes(html, 'optional LFT selection', 'Transaminases rising? (optional
 requireIncludes(code, 'WBC target threshold', 'x.wbc <= 3000');
 requireIncludes(code, 'lymphocyte threshold', 'x.alc < 300');
 requireIncludes(code, 'platelet stop threshold', 'x.platelets < 50000');
-requireIncludes(html, 'visible multiplication', "' × ' + factor + ' = '");
+requireIncludes(html, 'visible multiplication', "' mg × ' + factor + ' = '");
 requireIncludes(html, '3-second noncritical notice timer', 'Math.max(0, 3000 - (Date.now() - disclaimerFirstShownAt))');
 requireIncludes(html, 'transient caution wrapper', '#output.report-notices-dismissed .report-disclaimer');
 requireIncludes(html, 'recoverable caution link', "element('summary', '', 'Safety notes')");
