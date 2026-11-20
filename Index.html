@@ -1070,11 +1070,11 @@ select[name="rising"] {
   background: #fffcf7;
   padding: 12px 14px;
 }
-.report-cbc-only > summary {
-  cursor: pointer;
+.report-cbc-only > h3 {
+  margin: 0 0 8px;
   color: #75572a;
-  font-weight: 750;
-  font-size: 12.5px;
+  font-weight: 790;
+  font-size: 15px;
   line-height: 1.5;
 }
 .report-cbc-only .report-cbc-alert {
@@ -1590,6 +1590,8 @@ header.app-header h1 {
     <span id="loadingText">Preparing assessment…</span>
   </div>
 
+  <div id="cbcOnlyResult" hidden aria-label="CBC-only arithmetic explanation"></div>
+
   <div id="stopBox"
     class="stop-alert"
     hidden
@@ -1657,6 +1659,7 @@ header.app-header h1 {
   const saveNo = document.getElementById('saveNo');
   const saveState = document.getElementById('saveState');
   const stopBox = document.getElementById('stopBox');
+  const cbcOnlyResult = document.getElementById('cbcOnlyResult');
   const stopReasons = document.getElementById('stopReasons');
   const resultLoading = document.getElementById('resultLoading');
   const loadingText = document.getElementById('loadingText');
@@ -2499,6 +2502,8 @@ header.app-header h1 {
     saveState.textContent = '';
     resultLoading.hidden = true;
     output.hidden = true;
+    cbcOnlyResult.hidden = true;
+    cbcOnlyResult.replaceChildren();
     if (typingNumber && resultWasVisible) {
       // Hide stale numbers without shrinking the document under an open
       // numeric keyboard. Finish collapsing after focus leaves the field.
@@ -2676,6 +2681,37 @@ header.app-header h1 {
     resultLoading.hidden = true;
     output.hidden = false;
     output.replaceChildren();
+    cbcOnlyResult.hidden = true;
+    cbcOnlyResult.replaceChildren();
+
+    // Place CBC-only arithmetic BEFORE the red hard-stop box, visible
+    // immediately with no disclosure click. It never clears the hard stop.
+    if (r.hardStop && r.cbcOnlyArithmetic) {
+      const math = r.cbcOnlyArithmetic;
+      const panel = element('section', 'report-cbc-only');
+      panel.appendChild(element('h3', '', 'CBC-only calculation'));
+      panel.appendChild(element('p', 'report-cbc-alert',
+        'NOT A TREATMENT RECOMMENDATION. Safety checks below remain active. ' +
+        'These numbers show only the CBC table arithmetic; do not use them as ' +
+        'an instruction to administer 6-MP or MTX.'));
+      const wbcRule = (r.rules || []).find(item => item.id === 'WBC');
+      const alcRule = (r.rules || []).find(item => item.id === 'ALC');
+      panel.appendChild(element('p', 'report-cbc-math',
+        'CBC table level: ' + math.percentOfEntered + '% of current dose. ' +
+        (wbcRule ? wbcRule.detail : '') +
+        (alcRule && alcRule.affected ? ' · Low ALC cap applied.' : '')));
+      panel.appendChild(reportDrug('6-MP · arithmetic only', 'daily',
+        math.mpTabletsDaily, math.mpDaily, Number(input.current6),
+        math.changePercent, 50));
+      panel.appendChild(reportDrug('MTX · arithmetic only', 'weekly',
+        math.mtxTabletsWeekly, math.mtxWeekly, Number(input.currentM),
+        math.changePercent, 2.5));
+      panel.appendChild(element('p', 'report-cbc-alert',
+        'The clinical safety stop is not cleared by this calculation. ' +
+        'No dose candidate is saved to Google Sheets for a hard-stop assessment.'));
+      cbcOnlyResult.appendChild(panel);
+      cbcOnlyResult.hidden = false;
+    }
 
     stopBox.hidden = !r.hardStop;
     stopReasons.replaceChildren();
@@ -2744,34 +2780,8 @@ header.app-header h1 {
 
     if (r.hardStop) {
       output.appendChild(element('div', 'report-no-dose',
-        'The flagged safety condition prevents a dose recommendation. ' +
-        'You can inspect the CBC-only arithmetic below, but it does not override the stop.'));
-      if (r.cbcOnlyArithmetic) {
-        const math = r.cbcOnlyArithmetic;
-        const detail = element('details', 'report-cbc-only');
-        detail.appendChild(element('summary', '',
-          'View CBC-only calculation (not a treatment recommendation)'));
-        detail.appendChild(element('p', 'report-cbc-alert',
-          'SAFETY FLAG REMAINS ACTIVE. These numbers only show how the CBC percentage ' +
-          'would multiply the current entered doses if all other safety checks were ignored. ' +
-          'They are not approved doses or instructions to administer either drug.'));
-        const wbcRule = (r.rules || []).find(item => item.id === 'WBC');
-        const alcRule = (r.rules || []).find(item => item.id === 'ALC');
-        detail.appendChild(element('p', 'report-cbc-math',
-          'CBC table level: ' + math.percentOfEntered + '% of current dose. ' +
-          (wbcRule ? wbcRule.detail : '') +
-          (alcRule && alcRule.affected ? ' · Low ALC cap applied.' : '')));
-        detail.appendChild(reportDrug('6-MP · arithmetic only', 'daily',
-          math.mpTabletsDaily, math.mpDaily, Number(input.current6),
-          math.changePercent, 50));
-        detail.appendChild(reportDrug('MTX · arithmetic only', 'weekly',
-          math.mtxTabletsWeekly, math.mtxWeekly, Number(input.currentM),
-          math.changePercent, 2.5));
-        detail.appendChild(element('p', 'report-cbc-alert',
-          'The safety rule is not cleared by this calculation. ' +
-          'No dose candidate is saved to Google Sheets for a hard-stop assessment.'));
-        output.appendChild(detail);
-      }
+        'Clinical safety flag remains active. The CBC-only arithmetic is ' +
+        'shown above the hard-stop alert for explanation, not dosing.'));
     } else if (!r.candidate) {
       output.appendChild(element('div', 'report-no-dose',
         'No numerical dose candidate was generated by the current rules. This is not an instruction to maintain or adjust treatment.'));
@@ -2917,6 +2927,9 @@ header.app-header h1 {
   }
 
   function reportError(detail) {
+    cbcOnlyResult.hidden = true;
+    cbcOnlyResult.replaceChildren();
+    stopBox.hidden = true;
     result.style.display = 'block';
     resultLoading.hidden = true;
     output.hidden = false;
@@ -3030,6 +3043,8 @@ header.app-header h1 {
     resultLoading.hidden = false;
     output.hidden = true;
     output.replaceChildren();
+    cbcOnlyResult.hidden = true;
+    cbcOnlyResult.replaceChildren();
     loadingText.textContent = 'Preparing assessment…';
     stopBox.hidden = true;
     stopReasons.replaceChildren();
