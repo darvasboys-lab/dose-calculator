@@ -27,7 +27,7 @@ assert.ok(script, 'Frontend script missing');
 new Function(code);
 new Function(script);
 
-for (const label of ['Patient', 'CBC', 'LFT / RFT', 'Clinical']) {
+for (const label of ['Patient', 'CBC', 'LFT / KFT', 'Clinical']) {
   requireIncludes(html, 'calculator tab', "'" + label + "'");
 }
 for (const id of ['tabs', 'result', 'output', 'stopBox', 'stopReasons',
@@ -93,11 +93,23 @@ requireIncludes(html, 'traceability summary', 'Rules applied');
 requireIncludes(html, 'rules-affecting count', 'r.rulesAffecting');
 requireIncludes(html, 'tablets for 6-MP', "'current6Tabs'");
 requireIncludes(html, 'tablets for MTX', "'currentMTabs'");
-requireIncludes(html, 'optional RFT creatinine', "'creatinine'");
-requireIncludes(html, 'optional LFT selection', 'Transaminases rising? (optional)');
+requireIncludes(html, 'optional KFT creatinine', "'creatinine'");
+requireIncludes(html, 'rising assessment choice', 'Transaminases rising?');
+requireIncludes(html, 'rising unassessed button', "['unassessed', 'Unassessed', 'neutral']");
+requireIncludes(script, 'rising default is unassessed', "rising: 'unassessed'");
 requireIncludes(code, 'WBC target threshold', 'x.wbc <= 3000');
 requireIncludes(code, 'lymphocyte threshold', 'x.alc < 300');
 requireIncludes(code, 'platelet stop threshold', 'x.platelets < 50000');
+requireIncludes(code, 'maam clinic rule provenance', 'Ma’am — clinic maintenance rules');
+requireIncludes(code, 'BFM 2009 section trace', 'AIEOP-BFM ALL 2009 §24.9.1.2');
+requireIncludes(code, 'ICiCLe ANC target trace', 'ICiCLe ALL-14 Appendix 14');
+requireIncludes(script, 'rule outcome display', "entry.outcome");
+requireIncludes(script, 'rule source display', "Rule source: ' + entry.source");
+requireIncludes(html, 'BFM BSA reference cited', 'AIEOP-BFM ALL 2009 §24.9.1.3');
+requireIncludes(html, 'simple LFT KFT heading', "title: 'LFT and KFT'");
+requireIncludes(html, 'simple optional lab prompt', 'Leave blank if unavailable.');
+assert.ok(!html.includes('These are illustrative entered doses'), 'Remove requested patient-page disclaimer');
+assert.ok(!html.includes('<select name="rising"'), 'Use 3 segmented buttons, not a dropdown');
 requireIncludes(html, 'visible multiplication', "' mg × ' + factor + ' = '");
 requireIncludes(html, '3-second noncritical notice timer', 'Math.max(0, 3000 - (Date.now() - disclaimerFirstShownAt))');
 requireIncludes(html, 'transient caution wrapper', '#output.report-notices-dismissed .report-disclaimer');
@@ -198,6 +210,26 @@ assert.equal(bilirubinAboveBFMReview.hardStop, false);
 assert.equal(bilirubinAboveBFMReview.candidate, null);
 assert.ok(bilirubinAboveBFMReview.warnings.some(x =>
   x.includes('BFM liver review threshold')));
+
+
+const unassessedLftTrend = assess({...fixture, ast: 440, alt: '',
+  bilirubin: '', biliULN: '', transULN: 40, rising: 'unassessed'});
+assert.equal(unassessedLftTrend.hardStop, false);
+assert.equal(unassessedLftTrend.candidate, null);
+assert.ok(unassessedLftTrend.rules.find(r => r.id === 'LFT').outcome.includes('cannot be assessed'));
+
+const documentedStableLft = assess({...fixture, ast: 440, alt: '',
+  bilirubin: '', biliULN: '', transULN: 40, rising: 'no'});
+assert.equal(documentedStableLft.hardStop, false);
+assert.ok(documentedStableLft.candidate);
+
+const sourcedRules = assess({...fixture, rising: 'unassessed'}).rules;
+assert.equal(sourcedRules.length, 7);
+assert.ok(sourcedRules.every(r => r.source && r.outcome),
+  'Every displayed check must include its source and calculation/skip/stop explanation');
+assert.ok(sourcedRules.find(r => r.id === 'WBC').source.includes('AIEOP-BFM'));
+assert.ok(sourcedRules.find(r => r.id === 'ANC').source.includes('ICiCLe'));
+assert.ok(sourcedRules.find(r => r.id === 'KFT').outcome.startsWith('Skipped'));
 
 // A database outage must still return the calculated assessment and a failure message.
 const failedSave = runInNewContext(code + '\nassessAndSave(' +
