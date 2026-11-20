@@ -80,9 +80,23 @@ assert.ok(crPos > 0 && crPos < agePos, 'CR entry must precede age at the top');
 requireIncludes(script, 'same-session CR restore', 'window.sessionStorage.getItem');
 requireIncludes(script, 'same-session snapshot after confirmed save', 'rememberSavedInput(input)');
 requireIncludes(script, 'choices restored visibly', 'selectChoice(choice, value)');
-requireIncludes(html, '100 percent no-change wording', "(no change)");
-requireIncludes(html, 'unambiguous percent-of-entered dose', "'% of entered dose'");
+requireIncludes(html, 'current-dose result wording', "'% of the Current dose'");
+requireIncludes(html, 'separate prominent No Change line', "percent === 0 ? 'No Change'");
+requireIncludes(html, 'same percentage in result', "'% of the Current dose'");
 requireIncludes(html, 'single calculated-dose display', "element('div', 'report-dose-outcome')");
+requireIncludes(html, 'CBC slider helper', 'function cbcStepper(');
+for (const id of ['wbc', 'anc', 'alc', 'platelets', 'prevWbc', 'prevAnc']) {
+  requireIncludes(html, 'CBC slider: ' + id, "data-cbc-slider=\"${name}\"");
+}
+requireIncludes(script, 'CBC slider event', "slider.addEventListener('input'");
+requireIncludes(script, 'CBC number event', "number.addEventListener('input'");
+requireIncludes(html, 'CBC retains plus/minus', 'data-delta="-1"');
+requireIncludes(html, 'pill rows on right', 'report-drug-header');
+requireIncludes(html, 'tablet circle', 'report-tablet-dot');
+requireIncludes(script, 'pill rows of four', 'i += 4');
+requireIncludes(script, 'half tablet graphic', "type === 'half'");
+assert.ok(!html.includes('No sign-in · Save to Sheet only with Yes'),
+  'Remove header account/save note');
 assert.ok(!html.includes('class="report-eyebrow">ASSESSMENT REPORT'), 'Redundant report eyebrow must be removed');
 assert.ok(!html.includes('PROTOTYPE ASSESSMENT'), 'Internal assessment label must be removed');
 assert.ok(!html.includes("'Entered dose'"), 'Redundant entered-dose tiles must be removed');
@@ -104,8 +118,11 @@ requireIncludes(code, 'maam clinic rule provenance', 'Ma’am — clinic mainten
 requireIncludes(code, 'BFM 2009 section trace', 'AIEOP-BFM ALL 2009 §24.9.1.2');
 requireIncludes(code, 'ICiCLe ANC target trace', 'ICiCLe ALL-14 Appendix 14');
 requireIncludes(script, 'rule outcome display', "entry.outcome");
-requireIncludes(script, 'rule source display', "Rule source: ' + entry.source");
-requireIncludes(html, 'BFM BSA reference cited', 'AIEOP-BFM ALL 2009 §24.9.1.3');
+requireIncludes(html, 'BFM PDF filename', '1. Study9 Protocol Version 11 2 date15042011.pdf');
+requireIncludes(html, 'ICiCLe PDF filename',
+  '2_ICiCLe_Protocol_2014_latest_version_15_03_2018_final_Version_4.pdf');
+assert.ok(!script.includes("'Rule source: ' + entry.source"),
+  'Only PDF titles are shown in the result, not clinic-source text');
 requireIncludes(html, 'simple LFT KFT heading', "title: 'LFT and KFT'");
 requireIncludes(html, 'simple optional lab prompt', 'Leave blank if unavailable.');
 assert.ok(!html.includes('These are illustrative entered doses'), 'Remove requested patient-page disclaimer');
