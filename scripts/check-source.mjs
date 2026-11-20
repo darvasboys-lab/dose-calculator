@@ -105,6 +105,18 @@ requireIncludes(html, 'recoverable caution link', "element('summary', '', 'Safet
 requireIncludes(html, 'do not auto-hide hard stops', "stopBox.hidden = !r.hardStop");
 requireIncludes(html, 'keep clinical warnings persistent', "(r.warnings || []).forEach");
 requireIncludes(html, 'reset notice timer after edits', 'resetTransientNotices();');
+requireIncludes(code, 'oncologist-supplied ALT > 5 x ULN', 'x.alt > 5 * x.transULN');
+requireIncludes(code, 'oncologist-supplied bilirubin > 5 x ULN', 'x.bilirubin > 5 * x.biliULN');
+requireIncludes(code, 'clinic liver stop wording', 'Clinic liver rule: ALT >5 × ULN');
+requireIncludes(code, 'BFM lower bilirubin review retained', 'BFM liver review threshold: bilirubin >3 × ULN');
+requireIncludes(html, 'mobile numeric keyboard inputmode', 'inputmode="decimal"');
+requireIncludes(html, 'stable stale-result layout', '#result.stale-while-typing');
+requireIncludes(script, 'stop per-key layout collapse', 'if (!busy && !saveBusy && !assessmentReady && !lastInput) return;');
+requireIncludes(script, 'defer old result collapse to blur', "form.addEventListener('focusout'");
+requireIncludes(script, 'defer CR autofill to field exit', "cr.addEventListener('change'");
+assert.ok(!script.includes("restoreCR(cr.value);\n  });\n\n  /* INVALIDATE"),
+  'Do not do CR autofill during active typing');
+
 
 
 // Confirm real arithmetic with fictional inputs, without Google Sheets access.
@@ -168,6 +180,21 @@ const lowAnc = assess({...fixture, anc: 650});
 assert.equal(lowAnc.hardStop, false);
 assert.equal(lowAnc.candidate, null);
 
+// Clinic ALT/bilirubin >5x ULN are independent of the rising trend flag.
+const alt5 = assess({...fixture, alt: 200, transULN: 40, rising: ''});
+assert.equal(alt5.hardStop, false);
+const altOver5 = assess({...fixture, alt: 201, transULN: 40, rising: ''});
+assert.equal(altOver5.hardStop, true);
+assert.equal(altOver5.candidate, null);
+assert.ok(altOver5.stopReasons.some(x => x.includes('Clinic liver rule: ALT')));
+const bilirubinOver5 = assess({...fixture, bilirubin: 5.1, biliULN: 1});
+assert.equal(bilirubinOver5.hardStop, true);
+assert.equal(bilirubinOver5.candidate, null);
+assert.ok(bilirubinOver5.stopReasons.some(x => x.includes('Clinic liver rule: bilirubin')));
+const bilirubinAboveBFMReview = assess({...fixture, bilirubin: 3.5, biliULN: 1});
+assert.ok(bilirubinAboveBFMReview.stopReasons.some(x =>
+  x.includes('BFM liver review threshold')));
+
 // A database outage must still return the calculated assessment and a failure message.
 const failedSave = runInNewContext(code + '\nassessAndSave(' +
   JSON.stringify(fixture) + ');', {}, {timeout:3000});
@@ -177,4 +204,4 @@ assert.ok(failedSave.saveError, 'No error message when Sheets saving is unavaila
 
 console.log('PHO source checks passed: valid JS, clean document start, 4 tabs,');
 console.log('mobile metadata, hard-stop interface and simple Sheet saving.');
-console.log('Synthetic arithmetic checks: 50/100/150% levels, ALC cap, tablets, optional LFT, and hard stops passed.');
+console.log('Synthetic checks: CBC bands, tablet arithmetic, optional LFT, >5x clinic liver rule, and hard stops passed.');
