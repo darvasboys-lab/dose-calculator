@@ -179,7 +179,7 @@ assert.equal(tablets.candidate.mtxTabletsWeekly, 6);
 const optionalLft = assess({...fixture, bilirubin: '',
   biliULN: '', ast: '', alt: '', transULN: '', rising: ''});
 assert.equal(optionalLft.hardStop, false);
-assert.ok(optionalLft.rules.find(r => r.id === 'LFT').detail.includes('Not entered'));
+assert.ok(optionalLft.rules.find(r => r.id === 'LFT').outcome.includes('Skipped'));
 
 const wbcStop = assess({...fixture, wbc: 900, anc: 500, alc: 200});
 assert.equal(wbcStop.hardStop, true);
