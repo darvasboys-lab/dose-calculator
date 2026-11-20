@@ -1031,6 +1031,21 @@ select[name="rising"] {
 .cbc-slider {width:100%;height:30px;margin:0;accent-color:var(--blue);touch-action:pan-x;}
 .cbc-field .stepper {margin-top:0;}
 
+/* Tablet icons follow their numeric count on the RIGHT of each drug row. */
+.report-drug-header{display:grid;grid-template-columns:minmax(0,1fr) minmax(115px,max-content);gap:11px;align-items:start;}
+.report-drug-header .report-drug-name{margin:2px 0 0;line-height:1.5;}
+.report-dose-outcome{display:flex;flex-direction:column;align-items:flex-end;gap:3px;text-align:right;}
+.report-dose-number{font-size:19px;}
+.report-dose-unit{font-size:10.5px;}
+.report-tablet-rows{display:flex;flex-direction:column;align-items:flex-end;gap:5px;margin-top:7px;min-height:20px;}
+.report-tablet-row{display:flex;justify-content:flex-end;gap:5px;}
+.report-tablet-dot{display:block;width:20px;height:20px;flex:0 0 auto;border:1px solid #cbd3d9;border-radius:50%;background:radial-gradient(circle at 35% 25%,#fff,#ebeff2 75%,#dce2e7);box-shadow:0 2px 4px #1b2f3f1a;}
+.report-tablet-dot.scored::after{content:"";display:block;width:1px;height:15px;margin:1px auto;background:#adb9c0;transform:rotate(26deg);}
+.report-tablet-dot.half{width:10px;height:20px;border-radius:0 100% 100% 0;border-left:0;}
+.report-tablet-extra{font-size:10px;color:#788897;}
+.report-hero .report-change{display:block;margin-top:7px;font-size:18px;color:#32536b;font-weight:770;}
+@media(max-width:365px){.report-drug-header{grid-template-columns:minmax(0,1fr) minmax(108px,max-content)}.report-tablet-dot{width:17px;height:17px}.report-tablet-dot.half{width:8.5px;height:17px}}
+
 /* Compact facts, not competing callouts */
 .report-grid {
   display: grid;
@@ -2531,15 +2546,43 @@ header.app-header h1 {
 
   function reportDrug(name, interval, tablets, mg, currentMg, percent, strength) {
     const drug = element('div', 'report-drug');
-    drug.appendChild(element('p', 'report-drug-name', name));
+    const header = element('div', 'report-drug-header');
+    header.appendChild(element('p', 'report-drug-name', name +
+      ' (' + strength + ' mg tablet)'));
     const outcome = element('div', 'report-dose-outcome');
-    outcome.appendChild(element('strong', 'report-dose-number', tablets));
+    outcome.appendChild(element('strong', 'report-dose-number', tablets + ' tablets'));
     outcome.appendChild(element('span', 'report-dose-unit',
-      'tablets ' + (interval === 'daily' ? 'once daily' : 'once weekly') +
-      ' (' + strength + ' mg each)'));
-    drug.appendChild(outcome);
+      interval === 'daily' ? 'once daily' : 'once weekly'));
+
+    // Pills illustrate the count only; the numeric calculation is exact.
+    // Four per row: six pills = four in row one plus two in row two.
+    const pillRows = element('div', 'report-tablet-rows');
+    pillRows.setAttribute('aria-hidden', 'true');
+    const count = Math.max(0, Number(tablets) || 0);
+    const whole = Math.floor(count + 0.00001);
+    const fractional = count - whole;
+    const icons = [];
+    for (let i = 0; i < Math.min(whole, 20); i++) icons.push('whole');
+    const half = fractional >= 0.45 && fractional <= 0.55;
+    if (half && icons.length < 20) icons.push('half');
+    for (let i = 0; i < icons.length; i += 4) {
+      const row = element('div', 'report-tablet-row');
+      icons.slice(i, i + 4).forEach(type =>
+        row.appendChild(element('span', 'report-tablet-dot' +
+          (type === 'half' ? ' half' : '') +
+          (strength === 2.5 ? ' scored' : ''))));
+      pillRows.appendChild(row);
+    }
+    if (whole > 20) pillRows.appendChild(element('span', 'report-tablet-extra',
+      '+' + Number((count - 20).toFixed(2)) + ' not pictured'));
+    else if (fractional > 0.001 && !half)
+      pillRows.appendChild(element('span', 'report-tablet-extra',
+        'Fraction shown numerically; not pictured'));
+    outcome.appendChild(pillRows);
+    header.appendChild(outcome);
+    drug.appendChild(header);
     drug.appendChild(element('p', 'report-pill-equivalent',
-      'Calculated equivalent: ' + mg + (interval === 'daily' ? ' mg/day' : ' mg/week')));
+      mg + (interval === 'daily' ? ' mg/day' : ' mg/week')));
     const factor = (1 + percent / 100).toFixed(2);
     drug.appendChild(element('p', 'report-formula',
       currentMg + ' mg × ' + factor + ' = ' + mg + ' mg'));
@@ -2580,10 +2623,13 @@ header.app-header h1 {
     // Replace internal rule-engine terminology with plain language.
     const statusText = r.hardStop ? 'Clinical review required' :
       !r.candidate ? 'Review required' :
-      r.candidate.percentOfEntered + '% of entered dose' +
-        (percent === 0 ? ' (no change)' :
-          ' (' + (percent > 0 ? '+' : '') + percent + '% change)');
+      r.candidate.percentOfEntered + '% of the Current dose';
     lead.appendChild(element('div', 'report-strong', statusText));
+    if (r.candidate) {
+      lead.appendChild(element('div', 'report-change',
+        percent === 0 ? 'No Change' :
+          (percent > 0 ? '+' : '') + percent + '% Change'));
+    }
 
     const rules = Array.isArray(r.rules) ? r.rules : [];
     const wbcRule = rules.find(item => item.id === 'WBC');
@@ -2629,7 +2675,7 @@ header.app-header h1 {
       comparison.appendChild(element('h3', 'report-section-heading',
         'Calculated dose values'));
 
-      const ruleNote = r.candidate.percentOfEntered + '% of the entered dose ' +
+      const ruleNote = r.candidate.percentOfEntered + '% of the Current dose ' +
         '(' + (percent > 0 ? '+' : '') + percent + '% change). This is NOT a ' +
         'prescribing instruction or a percentage of an independently verified baseline.';
       comparison.appendChild(element('p', 'report-rule-note', ruleNote));
