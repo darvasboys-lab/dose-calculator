@@ -1026,6 +1026,11 @@ select[name="rising"] {
   line-height: 1.45;
 }
 
+/* Touch-friendly CBC sliders retain the full-range numeric input. */
+.cbc-field {display:flex;flex-direction:column;gap:8px;}
+.cbc-slider {width:100%;height:30px;margin:0;accent-color:var(--blue);touch-action:pan-x;}
+.cbc-field .stepper {margin-top:0;}
+
 /* Compact facts, not competing callouts */
 .report-grid {
   display: grid;
@@ -1483,10 +1488,6 @@ header.app-header h1 {
 <header class="app-header">
   <h1>PHO ALL Calculator</h1>
 </header>
-<p class="public-mode-intro" role="note">
-  No sign-in · Save to Sheet only with Yes
-</p>
-
 <nav id="tabs" class="tabs"
   aria-label="Calculator tabs">
 </nav>
@@ -1734,6 +1735,24 @@ header.app-header h1 {
     `);
   }
 
+  function cbcStepper(name, label, val, step, max, sliderMax, required = true) {
+    return field(label, `
+      <div class="cbc-field" data-cbc-field="${name}">
+        <input type="range" class="cbc-slider" data-cbc-slider="${name}"
+          min="0" max="${sliderMax}" step="${step}"
+          value="${Math.min(Number(val) || 0, sliderMax)}"
+          aria-label="${label} slider">
+        <div class="stepper" data-step="${step}">
+          <button type="button" data-delta="-1" aria-label="Decrease ${label}">−</button>
+          <input name="${name}" type="number" inputmode="numeric" enterkeyhint="next"
+            min="0" max="${max}" step="any" value="${val}"
+            ${required ? 'required' : ''} aria-label="${label}">
+          <button type="button" data-delta="1" aria-label="Increase ${label}">+</button>
+        </div>
+      </div>
+    `);
+  }
+
   function choice(name, label, items) {
     const buttons = items.map(item => `
       <button type="button"
@@ -1826,35 +1845,17 @@ header.app-header h1 {
     {
       title: 'Complete Blood Count',
       content: [
-        stepper(
-          'wbc', 'WBC / TLC (/µL)',
-          2500, 100, 200000
-        ),
+        cbcStepper('wbc', 'WBC / TLC (/µL)', 2500, 100, 200000, 10000),
 
-        stepper(
-          'anc', 'ANC (/µL)',
-          1000, 100, 200000
-        ),
+        cbcStepper('anc', 'ANC (/µL)', 1000, 100, 200000, 5000),
 
-        stepper(
-          'alc', 'ALC (/µL)',
-          900, 100, 200000
-        ),
+        cbcStepper('alc', 'ALC (/µL)', 900, 100, 200000, 5000),
 
-        stepper(
-          'platelets', 'Platelets (/µL)',
-          180000, 1000, 2000000
-        ),
+        cbcStepper('platelets', 'Platelets (/µL)', 180000, 1000, 2000000, 500000),
 
-        stepper(
-          'prevWbc', 'Previous WBC (/µL)',
-          2600, 100, 200000, false
-        ),
+        cbcStepper('prevWbc', 'Previous WBC (/µL)', 2600, 100, 200000, 10000, false),
 
-        stepper(
-          'prevAnc', 'Previous ANC (/µL)',
-          1050, 100, 200000, false
-        )
+        cbcStepper('prevAnc', 'Previous ANC (/µL)', 1050, 100, 200000, 5000, false)
       ].join('')
     },
 
@@ -2180,6 +2181,22 @@ header.app-header h1 {
     }
   });
 
+  /* Native CBC sliders preserve both numeric typing and +/- controls. */
+  form.querySelectorAll('[data-cbc-field]').forEach(group => {
+    const slider = group.querySelector('[data-cbc-slider]');
+    const number = group.querySelector('input[type="number"]');
+    slider.addEventListener('input', () => {
+      number.value = slider.value;
+      number.dispatchEvent(new Event('input', {bubbles: true}));
+    });
+    number.addEventListener('input', () => {
+      if (number.value === '') return;
+      const value = Number(number.value);
+      if (Number.isFinite(value)) slider.value = Math.max(Number(slider.min),
+        Math.min(Number(slider.max), value));
+    });
+  });
+
   /* CURRENT TABLET COUNTS → CANONICAL MILLIGRAMS */
 
   function syncDoseInputs() {
@@ -2305,6 +2322,12 @@ header.app-header h1 {
     });
     updateBsa();
     syncDoseInputs();
+    form.querySelectorAll('[data-cbc-field]').forEach(group => {
+      const slider = group.querySelector('[data-cbc-slider]');
+      const number = group.querySelector('input[type="number"]');
+      slider.value = Math.max(Number(slider.min),
+        Math.min(Number(slider.max), Number(number.value || 0)));
+    });
     crRestoreState.textContent = 'Previous saved values restored from this browser session.';
     crRestoreState.hidden = false;
   }
@@ -2918,6 +2941,11 @@ header.app-header h1 {
       applyDefaultChoices();
       updateBsa();
       syncDoseInputs();
+      form.querySelectorAll('[data-cbc-field]').forEach(group => {
+        const slider = group.querySelector('[data-cbc-slider]');
+        const number = group.querySelector('input[type="number"]');
+        slider.value = number.value;
+      });
       crRestoreState.hidden = true;
       crRestoreState.textContent = '';
       invalidate();
