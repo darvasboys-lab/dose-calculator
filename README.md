@@ -66,6 +66,14 @@ The source documents supplied for review are **AIEOP-BFM ALL 2009 Study 9, v1.2,
 
 A numeric editing change no longer repeatedly destroys/reflows the result panel. Stale results are hidden visually without collapsing page height during active numeric input and fully removed after the field loses focus. Numeric fields use decimal keyboard hints, and same-CR autofill happens on field exit rather than on every digit. This was verified with simulated browser focus/input events, not an on-device mobile browser.
 
+## Explaining pharmacogenetic hard stops
+
+- The older generic message, **“Pharmacogenetic status requires individualised review”**, is replaced by **TPMT: UNKNOWN**, **TPMT: VARIANT**, **NUDT15: UNKNOWN**, or **NUDT15: VARIANT**, according to the actual option selected. If both genes are flagged, each gets its own explanation.
+- **Unknown** means no normal status is documented in the form; it does **not** assert that a variant or myelosuppression has been found. **Variant** is a screening choice, not a complete genotype/phenotype classification. These checks are conservative app screening, not a claim that the supplied BFM/ICiCLe protocol requires this exact automatic hard stop.
+- A normal CBC does not automatically clear a genetic 6-MP safety flag. See the *CPIC guideline for thiopurine dosing based on TPMT and NUDT15 genotypes: 2025 update* for the pharmacogenetic rationale.
+- A clinician can expand **“View CBC-only calculation (not a treatment recommendation)”** to inspect the raw arithmetic of the current entered 6-MP/MTX doses multiplied by Ma’am’s WBC/ALC table level, with tablet illustrations. **This does not override the hard stop, does not determine a gene-specific dosing adjustment, and does not populate candidate-dose cells in Google Sheets.**
+- The screenshot saying **“Assessment calculated. Choose whether to save”** belongs to the earlier read-only/save-on-Yes deployment. The current GitHub workflow automatically saves after Calculate, then asks **“Remove from Sheets? Yes / No”** after successful saving; the existing live Apps Script deployment must be updated separately.
+
 ## Clinical boundaries
 
 - The dose rules and reference coefficients are illustrative and unvalidated; the latest proposed CBC modification table has not undergone institutional clinical verification.
