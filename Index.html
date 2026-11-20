@@ -1188,6 +1188,52 @@ input[type=range]:focus-visible {
   #output .report-disclaimer { transition: none; }
 }
 
+/* Clear opt-in step shown only AFTER a report has been calculated. */
+.cr-restore-status[hidden], .save-choice[hidden], #saveState[hidden] {
+  display: none !important;
+}
+.cr-restore-status {
+  margin: -12px 0 0;
+  color: #276b59;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+.save-choice {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #e2e8ee;
+  border-radius: 14px;
+  background: #f9fbfc;
+}
+.save-choice-title {
+  margin: 0 0 12px;
+  color: #2b4458;
+  font-size: 13.5px;
+  font-weight: 750;
+}
+.save-choice-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.save-choice-btn {
+  appearance: none;
+  min-height: 48px;
+  border: 0;
+  border-radius: 11px;
+  color: white;
+  font-size: 15px;
+  font-weight: 780;
+  cursor: pointer;
+}
+.save-choice-btn.yes { background: #188155; }
+.save-choice-btn.no { background: #c33f47; }
+.save-choice-btn.yes:active { background: #126b47; }
+.save-choice-btn.no:active { background: #a9343b; }
+.save-choice-btn:disabled { opacity: .48; cursor: default; }
+.save-choice-btn:focus-visible { outline: 3px solid #b7965a; outline-offset: 3px; }
+
 /* Save confirmation is distinct from clinical status */
 #result .save-state {
   margin-top: 15px;
@@ -1395,11 +1441,19 @@ header.app-header h1 {
 
   <div id="output" class="summary" hidden></div>
 
-  <div id="saveState" class="save-state" role="status" aria-live="polite">
-    Ready to calculate · No assessment saved yet
-  </div>
-
   <ul id="warnings"></ul>
+
+  <div id="saveChoice" class="save-choice" hidden>
+    <p class="save-choice-title">Save to Google Sheets?</p>
+    <div class="save-choice-actions">
+      <button id="saveYes" class="save-choice-btn yes"
+              type="button">Yes</button>
+      <button id="saveNo" class="save-choice-btn no"
+              type="button">No</button>
+    </div>
+  </div>
+  <div id="saveState" class="save-state" role="status"
+       aria-live="polite" hidden></div>
 
   <div class="actions">
     <button id="save"
@@ -1429,6 +1483,9 @@ header.app-header h1 {
   const message = document.getElementById('message');
   const output = document.getElementById('output');
   const saveButton = document.getElementById('save');
+  const saveChoice = document.getElementById('saveChoice');
+  const saveYes = document.getElementById('saveYes');
+  const saveNo = document.getElementById('saveNo');
   const saveState = document.getElementById('saveState');
   const stopBox = document.getElementById('stopBox');
   const stopReasons = document.getElementById('stopReasons');
@@ -1472,6 +1529,8 @@ header.app-header h1 {
   let saved = false;
   let lastInput = null;
   let lastInputSignature = null;
+  let assessmentReady = false;
+  let saveDeclined = false;
   let previewWatchdog = null;
   let disclaimerTimer = null;
   let disclaimerFirstShownAt = null;
@@ -1618,6 +1677,18 @@ header.app-header h1 {
     {
       title: 'Patient Details',
       content: [
+        field('CR Number (4 digits)', `
+          <input name="demoId"
+            type="text"
+            inputmode="numeric"
+            pattern="[0-9]{4}"
+            maxlength="4"
+            autocomplete="off"
+            placeholder="0001"
+            required>
+        `),
+        `<p id="crRestoreState" class="cr-restore-status"
+            role="status" aria-live="polite" hidden></p>`,
         slider(
           'age', 'Age (years)',
           0, 25, 0.5, 6
@@ -1654,18 +1725,7 @@ header.app-header h1 {
         `<p class="dose-prefill-note">
           Prefilled example values only. Confirm the actual
           prescribed doses before calculating.
-        </p>`,
-
-        field('CR Number (4 digits)', `
-          <input name="demoId"
-            type="text"
-            inputmode="numeric"
-            pattern="[0-9]{4}"
-            maxlength="4"
-            autocomplete="off"
-            placeholder="0001"
-            required>
-        `)
+        </p>`
       ].join('')
     },
 
@@ -2084,10 +2144,66 @@ header.app-header h1 {
 
   const cr = form.elements.demoId;
 
+  const crRestoreState = document.getElementById('crRestoreState');
+
+  // Session-only draft restoration. The public web app does not expose Sheet
+  // records by an easily guessed four-digit CR. Do not use real patient data.
+  const crCachePrefix = 'pho-all-demo-cr:';
+  function rememberSavedInput(input) {
+    if (!input || !/^\d{4}$/.test(String(input.demoId || ''))) return;
+    const clean = Object.assign({}, input);
+    delete clean._entryId;
+    try {
+      window.sessionStorage.setItem(
+        crCachePrefix + input.demoId, JSON.stringify(clean)
+      );
+    } catch (_) {
+      // Some private browsers block storage; saving to Sheets still works.
+    }
+  }
+
+  function restoreCR(crNumber) {
+    crRestoreState.hidden = true;
+    crRestoreState.textContent = '';
+    if (!/^\d{4}$/.test(crNumber)) return;
+    let previous;
+    try {
+      previous = JSON.parse(
+        window.sessionStorage.getItem(crCachePrefix + crNumber) || 'null'
+      );
+    } catch (_) { return; }
+    if (!previous || previous.demoId !== crNumber ||
+        typeof previous !== 'object') return;
+
+    // Only restore known fields. Never allow cached data to inject HTML or
+    // add new form fields; update the visible sliders and choice controls.
+    for (const [name, value] of Object.entries(previous)) {
+      if (name === 'demoId' || !Object.prototype.hasOwnProperty.call(previous, name)) continue;
+      const el = form.elements[name];
+      if (!el || typeof value !== 'string') continue;
+      const choice = form.querySelector('[data-choice="' + name + '"]');
+      if (choice) {
+        if ([...choice.querySelectorAll('[data-value]')]
+            .some(button => button.dataset.value === value)) {
+          selectChoice(choice, value);
+        }
+      } else if (el.type === 'number') {
+        el.value = value;
+      }
+    }
+
+    form.querySelectorAll('[data-slider]').forEach(slider => {
+      const el = form.elements[slider.dataset.slider];
+      if (el) slider.value = el.value;
+    });
+    updateBsa();
+    crRestoreState.textContent = 'Previous saved values restored from this browser session.';
+    crRestoreState.hidden = false;
+  }
+
   cr.addEventListener('input', () => {
-    cr.value = cr.value
-      .replace(/\D/g, '')
-      .slice(0, 4);
+    cr.value = cr.value.replace(/\D/g, '').slice(0, 4);
+    restoreCR(cr.value);
   });
 
   /* INVALIDATE OLD RESULTS AND RELEASE STALE REQUESTS */
@@ -2133,12 +2249,18 @@ header.app-header h1 {
     unlockCalculate();
     saveBusy = false;
     saved = false;
+    assessmentReady = false;
+    saveDeclined = false;
     lastInput = null;
     lastInputSignature = null;
+    saveChoice.hidden = true;
+    saveYes.disabled = false;
+    saveNo.disabled = false;
     saveButton.disabled = true;
     saveButton.hidden = true;
+    saveState.hidden = true;
     saveState.classList.remove('unsaved', 'pending');
-    saveState.textContent = 'Ready to calculate · No assessment saved yet';
+    saveState.textContent = '';
     result.style.display = 'none';
     resultLoading.hidden = true;
     output.hidden = true;
@@ -2400,38 +2522,54 @@ header.app-header h1 {
     message.textContent = detail;
   }
 
-  /* CALCULATE AND SAVE — SIMPLE ONE-DOCTOR DEMO WORKFLOW */
+  /* CALCULATE FIRST — THE DOCTOR CHOOSES WHETHER TO SAVE */
 
   function markSavePending() {
+    saveState.hidden = false;
     saveState.classList.remove('unsaved');
     saveState.classList.add('pending');
-    saveState.textContent = 'Saving assessment to Google Sheets…';
+    saveState.textContent = 'Saving to Google Sheets…';
+    saveChoice.hidden = true;
     saveButton.hidden = true;
     saveButton.disabled = true;
   }
 
   function markSaved(input, when) {
     saved = true;
+    saveBusy = false;
+    saveDeclined = false;
+    saveState.hidden = false;
     saveState.classList.remove('unsaved', 'pending');
     const time = when ? new Date(when).toLocaleString() : '';
-    saveState.textContent = 'Saved automatically · CR ' + input.demoId +
+    saveState.textContent = 'Saved to Google Sheets · CR ' + input.demoId +
       (time ? ' · ' + time : '');
+    saveChoice.hidden = true;
     saveButton.hidden = true;
     saveButton.disabled = true;
+    rememberSavedInput(input);
   }
 
   function markSaveFailed(reason) {
     if (saved) return;
+    saveState.hidden = false;
     saveState.classList.remove('pending');
     saveState.classList.add('unsaved');
     saveState.textContent = 'NOT SAVED · ' + reason;
+    saveChoice.hidden = true;
     saveButton.disabled = false;
     saveButton.hidden = false;
   }
 
+  function showSaveChoice() {
+    if (!assessmentReady || saved || saveBusy) return;
+    saveChoice.hidden = false;
+    saveYes.disabled = false;
+    saveNo.disabled = false;
+  }
+
   form.addEventListener('submit', e => {
     e.preventDefault();
-    if (busy || !validate()) return;
+    if (busy || saveBusy || !validate()) return;
     if (!(window.google && google.script && google.script.run)) {
       message.textContent = 'Open the published Google Apps Script web app.';
       return;
@@ -2439,21 +2577,21 @@ header.app-header h1 {
 
     const input = Object.fromEntries(new FormData(form).entries());
     const signature = JSON.stringify(input);
-    // Retry the same logical save with the same ID to avoid duplicate rows.
-    input._entryId = lastInput && !saved && signature === lastInputSignature
-      ? lastInput._entryId
-      : ((window.crypto && typeof window.crypto.randomUUID === 'function')
-          ? window.crypto.randomUUID()
-          : (Date.now().toString(36) + '_' +
-            Math.random().toString(36).slice(2) + '_' +
-            Math.random().toString(36).slice(2)));
-
+    const requestId = (window.crypto && typeof window.crypto.randomUUID === 'function')
+      ? window.crypto.randomUUID()
+      : (Date.now().toString(36) + '_' +
+         Math.random().toString(36).slice(2) + '_' +
+         Math.random().toString(36).slice(2));
+    input._entryId = requestId;
     lastInput = input;
     lastInputSignature = signature;
     clearRequestWatchdogs();
     resetTransientNotices();
     const seq = ++version;
     busy = true;
+    saved = false;
+    saveDeclined = false;
+    assessmentReady = false;
     calculateButton.disabled = true;
     calculateButton.textContent = 'Preparing assessment…';
     result.style.display = 'block';
@@ -2464,57 +2602,94 @@ header.app-header h1 {
     stopBox.hidden = true;
     stopReasons.replaceChildren();
     warningsBox.replaceChildren();
-    markSavePending();
-    message.textContent = 'Calculating and saving…';
+    saveChoice.hidden = true;
+    saveState.hidden = true;
+    saveState.textContent = '';
+    saveButton.hidden = true;
+    message.textContent = 'Calculating assessment…';
 
     window.requestAnimationFrame(() => {
       if (seq === version) result.scrollIntoView({behavior: 'smooth', block: 'start'});
     });
 
-    // Google calls may finish late. Do not claim a failed save on a timeout.
     previewWatchdog = window.setTimeout(() => {
-      if (seq !== version) return;
+      if (seq !== version || !busy) return;
       unlockCalculate();
-      markSaveFailed('Save status not confirmed. Check the Sheet or choose Retry save.');
-      reportError('Google Apps Script is taking longer than expected. Please check your connection.');
-    }, 45000);
+      reportError('Assessment timed out. Check the connection and try again.');
+    }, 25000);
 
+    // Read-only calculation. No Sheet write occurs until Yes is clicked.
     google.script.run
-      .withSuccessHandler(payload => {
+      .withSuccessHandler(assessment => {
         if (seq !== version) return;
         clearRequestWatchdogs();
         unlockCalculate();
         try {
-          if (!payload || !showReport(payload.assessment, seq, input)) {
-            markSaveFailed('Assessment response was incomplete. Please retry.');
+          if (!showReport(assessment, seq, input)) {
+            message.textContent = 'Could not display the assessment. Please retry.';
             return;
           }
-          if (payload.saved === true) {
-            markSaved(input, payload.savedAt);
-            message.textContent = 'Assessment calculated and saved.';
-          } else {
-            markSaveFailed(payload.saveError || 'Google Sheet could not save this assessment.');
-            message.textContent = 'Assessment calculated, but not saved. Select Retry save.';
-          }
+          assessmentReady = true;
+          message.textContent = 'Assessment calculated. Choose whether to save.';
+          showSaveChoice();
         } catch (err) {
-          console.error('PHO assessment report display error:', err);
-          markSaveFailed('Could not confirm the assessment. Please retry.');
-          reportError('Unable to display the assessment; please retry.');
+          console.error('PHO assessment display error:', err);
+          reportError('Could not display the assessment. Please retry.');
         }
       })
       .withFailureHandler(err => {
         if (seq !== version) return;
         clearRequestWatchdogs();
         unlockCalculate();
-        markSaveFailed((err && err.message) || String(err));
         reportError('Assessment unavailable: ' +
           ((err && err.message) || String(err)));
+      })
+      .assessCase(input);
+  });
+
+  saveYes.addEventListener('click', () => {
+    if (!assessmentReady || saved || saveBusy || !lastInput) return;
+    if (!(window.google && google.script && google.script.run)) return;
+    const input = Object.assign({}, lastInput);
+    const seq = version;
+    saveDeclined = false;
+    saveBusy = true;
+    markSavePending();
+    google.script.run
+      .withSuccessHandler(payload => {
+        if (seq !== version) return;
+        saveBusy = false;
+        if (payload && payload.saved === true) {
+          markSaved(input, payload.savedAt);
+          message.textContent = 'Saved to Google Sheets.';
+        } else {
+          markSaveFailed((payload && payload.saveError) ||
+            'Google Sheets did not confirm a saved record.');
+          message.textContent = 'Assessment displayed but not saved.';
+        }
+      })
+      .withFailureHandler(err => {
+        if (seq !== version) return;
+        saveBusy = false;
+        markSaveFailed((err && err.message) || String(err));
+        message.textContent = 'Save failed. You can retry.';
       })
       .assessAndSave(input);
   });
 
+  saveNo.addEventListener('click', () => {
+    if (!assessmentReady || saved || saveBusy) return;
+    saveDeclined = true;
+    saveState.hidden = false;
+    saveState.classList.remove('pending');
+    saveState.classList.add('unsaved');
+    saveState.textContent = 'Not saved · No selected';
+    // Leave Yes available in case the user changes their decision.
+    message.textContent = 'Result remains visible; nothing was saved.';
+  });
+
   saveButton.addEventListener('click', () => {
-    if (!lastInput || busy || saveBusy || saved) return;
+    if (!lastInput || !assessmentReady || busy || saveBusy || saved) return;
     const input = Object.assign({}, lastInput);
     const seq = version;
     saveBusy = true;
@@ -2522,16 +2697,16 @@ header.app-header h1 {
     saveState.textContent = 'Retrying Google Sheets save…';
     google.script.run
       .withSuccessHandler(text => {
-        saveBusy = false;
         if (seq !== version) return;
+        saveBusy = false;
         markSaved(input);
         message.textContent = text;
       })
       .withFailureHandler(err => {
-        saveBusy = false;
         if (seq !== version || saved) return;
+        saveBusy = false;
         markSaveFailed((err && err.message) || String(err));
-        message.textContent = 'Save failed. The calculation is not a saved record.';
+        message.textContent = 'Save failed. You can retry.';
       })
       .saveAssessment(input);
   });
