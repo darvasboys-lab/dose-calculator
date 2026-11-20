@@ -59,6 +59,7 @@ main {
 }
 
 /* Startup welcome: restrained gold accent, automatic dismissal. */
+/* Minimal golden startup notice: just the deployment version. */
 .welcome-overlay[hidden] { display: none !important; }
 .welcome-overlay {
   position: fixed;
@@ -66,11 +67,10 @@ main {
   z-index: 1200;
   display: grid;
   place-items: center;
-  padding: max(18px, env(safe-area-inset-top)) 18px
-           max(18px, env(safe-area-inset-bottom));
-  background: rgba(20, 36, 50, .52);
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
+  padding: 22px;
+  background: rgba(26, 35, 43, .30);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
   transition: opacity .24s ease, visibility .24s ease;
 }
 .welcome-overlay.is-closed {
@@ -79,91 +79,35 @@ main {
   pointer-events: none;
 }
 .welcome-panel {
-  width: min(100%, 410px);
-  padding: 29px 25px 26px;
-  border: 1px solid #e9e0d3;
-  border-radius: 23px;
-  background: #fff;
-  box-shadow: 0 25px 65px rgba(17, 32, 44, .22);
+  width: min(100%, 360px);
+  padding: 29px 25px 27px;
+  border: 1px solid rgba(188, 153, 93, .40);
+  border-radius: 20px;
+  background: linear-gradient(160deg, #fffefb, #fff9ef);
+  box-shadow: 0 22px 58px rgba(25, 35, 42, .18);
   text-align: center;
 }
-.welcome-emblem {
-  display: grid;
-  place-items: center;
-  width: 57px;
-  height: 57px;
-  margin: 0 auto 18px;
-  border: 1px solid #e8d8b9;
-  border-radius: 18px;
-  background: linear-gradient(140deg, #fffaf0, #f4ead9);
-  color: #8d6c3c;
-  font-size: 20px;
-  font-weight: 780;
-  letter-spacing: -.045em;
-}
-.welcome-overline {
-  margin: 0 0 7px;
-  color: #967647;
-  font-size: 9.5px;
-  font-weight: 790;
-  letter-spacing: .14em;
-}
-.welcome-panel h2 {
-  margin: 0;
-  color: #21384a;
-  font-size: clamp(24px, 7vw, 29px);
-  font-weight: 780;
-  letter-spacing: -.045em;
-  line-height: 1.2;
-}
-.welcome-subtitle {
-  margin: 8px 0 14px;
-  color: #607487;
-  font-size: 13px;
-  font-weight: 550;
-}
-.welcome-release {
-  display: inline-block;
-  margin: 0 auto 16px;
-  padding: 7px 11px;
-  border: 1px solid #ebe4d7;
-  border-radius: 99px;
-  color: #896d45;
-  background: #fffcf7;
-  font-size: 10px;
-  font-weight: 710;
-  letter-spacing: .015em;
-}
-.welcome-privacy {
-  max-width: 275px;
-  margin: 0 auto 17px;
-  color: #788794;
-  font-size: 11px;
-  line-height: 1.6;
-}
-.welcome-start {
-  appearance: none;
+.welcome-panel::before {
+  content: "";
   display: block;
-  width: 100%;
-  min-height: 49px;
-  padding: 12px 15px;
-  border: 0;
-  border-radius: 12px;
-  background: #16699f;
-  color: #fff;
-  cursor: pointer;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 730;
-  box-shadow: 0 4px 12px rgba(22, 105, 159, .17);
+  width: 38px;
+  height: 3px;
+  margin: 0 auto 17px;
+  border-radius: 9px;
+  background: linear-gradient(90deg, #d3b57d, #946d34, #d3b57d);
 }
-.welcome-start:focus-visible {
-  outline: 3px solid #bc9a63;
-  outline-offset: 3px;
+.welcome-version {
+  margin: 0;
+  color: #71542c;
+  font-size: clamp(18px, 5vw, 21px);
+  font-weight: 600;
+  letter-spacing: -.022em;
+  line-height: 1.42;
+  font-variant-numeric: tabular-nums;
 }
-.welcome-start:active { background: #115683; }
-@media (max-width: 430px) {
-  .welcome-panel { padding: 25px 21px 22px; }
+.welcome-version strong {
+  color: #9c722e;
+  font-weight: 815;
 }
 @media (prefers-reduced-motion: reduce) {
   .welcome-overlay { transition: none; }
@@ -1421,18 +1365,11 @@ header.app-header h1 {
 <body>
 <!-- Short welcoming banner for each fresh page load. It closes automatically
      so that anonymous users can always reach the calculator without extra steps. -->
-<div id="welcomeBanner" class="welcome-overlay" hidden role="dialog"
-     aria-modal="true" aria-labelledby="welcomeTitle">
-  <section class="welcome-panel">
-    <div class="welcome-emblem" aria-hidden="true">PHO</div>
-    <p class="welcome-overline">MAINTENANCE ASSESSMENT</p>
-    <h2 id="welcomeTitle">PHO ALL Calculator</h2>
-    <p class="welcome-subtitle">Your assessment workspace</p>
-    <div class="welcome-release">Build 2026.11.20 · Research prototype</div>
-    <p class="welcome-privacy">Opens without sign-in. Assessments save to the linked Sheet.
-      Use fictional cases only.</p>
-    <button type="button" id="welcomeStart" class="welcome-start">Start assessment</button>
-  </section>
+<div id="welcomeBanner" class="welcome-overlay" hidden
+     role="status" aria-live="polite" aria-label="Updated application version">
+  <div class="welcome-panel">
+    <p class="welcome-version">Updated to version <strong id="deploymentVersion">__PHO_DEPLOYMENT_VERSION__</strong></p>
+  </div>
 </div>
 <main>
 
@@ -1522,12 +1459,10 @@ header.app-header h1 {
   const loadingText = document.getElementById('loadingText');
   const warningsBox = document.getElementById('warnings');
 
-  // Build label refers to the source release, not Apps Script's deployment
-  // version number. Version numbers shown by clasp change at deployment.
+  // The deployment helper replaces the version marker before clasp push.
+  // Never invent a version if someone deploys without using that helper.
   const welcomeBanner = document.getElementById('welcomeBanner');
-  const welcomeStart = document.getElementById('welcomeStart');
-  welcomeBanner.hidden = false;
-  welcomeStart.focus({preventScroll: true});
+  const deploymentVersion = document.getElementById('deploymentVersion');
   let welcomeDismissed = false;
   let welcomeTimeout = null;
   let welcomeHideTimeout = null;
@@ -1537,18 +1472,16 @@ header.app-header h1 {
     window.clearTimeout(welcomeTimeout);
     welcomeBanner.classList.add('is-closed');
     welcomeBanner.setAttribute('aria-hidden', 'true');
-    // Return keyboard focus to the working calculator on dismissal.
-    if (document.activeElement === welcomeStart) {
-      const firstTab = tabsBox.querySelector('[data-tab="0"]');
-      if (firstTab) firstTab.focus({preventScroll: true});
-    }
     welcomeHideTimeout = window.setTimeout(() => {
       welcomeBanner.hidden = true;
     }, 250);
   }
-  welcomeStart.addEventListener('click', closeWelcome);
-  // Do not leave a modal blocking the calculator if the user does nothing.
-  welcomeTimeout = window.setTimeout(closeWelcome, 4000);
+  // A missing version marker should not show a fabricated release number.
+  if (/^\\d+$/.test(deploymentVersion.textContent.trim())) {
+    welcomeBanner.hidden = false;
+    welcomeTimeout = window.setTimeout(closeWelcome, 2800);
+    welcomeBanner.addEventListener('click', closeWelcome);
+  }
 
   const footer = `
     <footer class="dev-credit" aria-label="Developer credit">
