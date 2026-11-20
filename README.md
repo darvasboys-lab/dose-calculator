@@ -12,7 +12,7 @@ The current source supports a straightforward single-doctor demonstration workfl
 4. After the result appears, choose **Save to Google Sheets? Yes (green) / No (red)**. Only **Yes** calls `assessAndSave()`. **No** leaves the result visible without writing a row.
 5. The result shows **Saved to Google Sheets** only after the backend confirms both `AssessmentHistory` and `LatestByCR` were updated. A failed save offers **Retry save** using the same request ID.
 
-**Previous CR values:** After a successful Yes/save, the entered form values are also cached for that *same browser tab/session*. Entering that four-digit CR again restores age, height, weight, doses, CBC, LFT and clinical choices, and recalculates the visible BSA. This is **not a Google Sheets record lookup**: older Sheet records, other devices and new browser sessions are not available through public CR autofill. Four digits are easy to guess; anonymously reading Google Sheets records by CR would expose stored clinical information. Cache only fictional examples.
+**Previous CR values:** After a successful Yes/save, the entered form values are also cached for that *same browser tab/session*. Entering that four-digit CR again and then leaving the CR field restores age, height, weight, doses, CBC, LFT and clinical choices, and recalculates the visible BSA. Restoration is deferred until focus leaves the input so the mobile number keypad stays open while typing. This is **not a Google Sheets record lookup**: older Sheet records, other devices and new browser sessions are not available through public CR autofill. Four digits are easy to guess; anonymously reading Google Sheets records by CR would expose stored clinical information. Cache only fictional examples.
 
 The browser uses `assessCase()` for the preview, `assessAndSave()` after Yes, and `saveAssessment()` to retry with the same request ID. The backend retains append-only history, four-digit CRs (including leading zeroes), and safety hard stops. A hard-stop row is saved without candidate-dose values. Existing `DemoCases` and older records remain unchanged by deployment.
 
@@ -44,6 +44,27 @@ The result also checks **ANC (stated target 750–1,500/µL)**, **ALC below 300/
 **Dose entry:** The app accepts current 6-MP as **50 mg tablets per day**, and current MTX as **2.5 mg tablets per week**. It calculates milligram equivalents. For a fictional 1-tablet 6-MP daily / 4-tablet MTX weekly example at a WBC above 3,000/µL, the 150% calculation displays **1.5 tablets daily** and **6 tablets weekly**. That is **150% of the entered dose, a 50% increase**, not a 150% increase.
 
 **Important modelling limitation:** Protocol dose percentages normally relate to a documented protocol/previously attained full dose; the current prototype applies percentage multipliers to the *entered dose*. Repeated application may compound incorrectly. The project cannot safely support treatment decisions until a qualified clinical team resolves baseline-dose definitions, tablet splitting/rounding, drug interruption/restart status and local protocol applicability. Do not deploy these rules for patient care.
+
+## Verification against two supplied clinical protocols
+
+The 20 November 2026 **local oncologist rule** was added: with available ALT or bilirubin and the corresponding ULN, **ALT >5 × ULN OR bilirubin >5 × ULN** blocks both candidate-dose displays and records the clinic-specific interruption instruction for oncologist confirmation. The pre-existing BFM bilirubin threshold at **>3 × ULN** remains as a separate review/hard-stop threshold; do not mistake it for the new >5 interruption criterion. No LFT result means this particular check cannot run.
+
+The source documents supplied for review are **AIEOP-BFM ALL 2009 Study 9, v1.2, 15 April 2011, pp. 155–156** (PDF pp. 165–166) and **ICiCLe ALL-14/InPOG-ALL-15-01, v4.0, 2 May 2018, Appendix 14 p. 167** (PDF p. 167). They are **not interchangeable**:
+
+| Topic | BFM 2009 §24.9.1.2 | ICiCLe Appendix 14 |
+| --- | --- | --- |
+| Titration target | Leukocytes below 3,000/µL | ANC 750–1,500/µL and platelets ≥75,000/µL |
+| Reduction / stop | WBC <1,500; granulocytes <500; ALC <300; platelets <50,000 → reduce or if necessary stop | ANC ≤500 or platelets ≤50,000 → stop both; resume after ANC ≥1,000 and platelets ≥75,000 |
+| Escalation | Increase toward desired WBC; can exceed 150% of reference dose | ANC persistently >2,000 for ≥4 weeks: assess adherence, sequentially increase 6-MP by 25%, then MTX by 25% after further monitoring |
+| Hepatic | Consider reduction at bilirubin >3× ULN or rising aminotransferases >10–20× ULN | Raised transaminases alone do not dictate adjustment; withhold in cholestasis / conjugated hyperbilirubinemia |
+| Reference starting 6-MP | 50 mg/m²/day | 60 mg/m²/day |
+| Oral MTX | 20 mg/m² once weekly | 20 mg/m² once weekly |
+
+**Mismatch still to resolve:** The current WBC band calculator uses the local 0/50/100/150% table, immediately illustrates 150% when WBC >3,000, and applies percentages to the entered dose. It therefore does **not exactly implement BFM or ICiCLe**. ICiCLe requires persistent ANC elevation, adherence assessment, and staged escalation; BFM uses a 50 mg/m² baseline whereas ICiCLe uses 60 mg/m². Additionally ICiCLe uses 12.5-mg quarter-tablet steps for 6-MP; this app's 50-mg tablet entry uses half-tablet increments. The chosen institutional algorithm, baseline, and formulation need to be confirmed before real-world dosing.
+
+### Mobile number keypad
+
+A numeric editing change no longer repeatedly destroys/reflows the result panel. Stale results are hidden visually without collapsing page height during active numeric input and fully removed after the field loses focus. Numeric fields use decimal keyboard hints, and same-CR autofill happens on field exit rather than on every digit. This was verified with simulated browser focus/input events, not an on-device mobile browser.
 
 ## Clinical boundaries
 
