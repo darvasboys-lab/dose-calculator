@@ -50,13 +50,14 @@ requireIncludes(script, 'hard-stop handling', 'stopBox.hidden = !r.hardStop');
 requireIncludes(html, 'small final-page signature', 'Developed by Dr Aman Singh');
 
 requireIncludes(html, 'new app title', '<h1>PHO ALL Calculator</h1>');
-requireIncludes(html, 'welcome banner', 'id="welcomeBanner"');
+requireIncludes(html, 'minimal welcome banner', 'id="welcomeBanner"');
 requireIncludes(html, 'banner starts without blocking broken JS', 'class="welcome-overlay" hidden');
-requireIncludes(html, 'welcome action button', 'id="welcomeStart"');
-requireIncludes(html, 'welcome source-build label', 'Build 2026.11.20');
-requireIncludes(script, 'automatic welcome dismissal', 'window.setTimeout(closeWelcome, 4000)');
-requireIncludes(script, 'manual welcome dismissal', "welcomeStart.addEventListener('click', closeWelcome)");
-requireIncludes(html, 'welcome explains Sheet saving', 'Assessments save to the linked Sheet.');
+requireIncludes(html, 'one-line golden message', 'Updated to version <strong id="deploymentVersion">__PHO_DEPLOYMENT_VERSION__</strong>');
+requireIncludes(script, 'automatic welcome dismissal', 'window.setTimeout(closeWelcome, 2800)');
+requireIncludes(script, 'tap to dismiss', "welcomeBanner.addEventListener('click', closeWelcome)");
+assert.ok(!html.includes('id="welcomeStart"'), 'Welcome modal must not add extra controls');
+assert.ok(!html.includes('Build 2026.11.20'), 'Do not confuse source-build date with Apps Script version');
+
 
 requireIncludes(code, 'Google Sheets menu title', "createMenu('PHO ALL Calculator')");
 requireIncludes(html, 'BSA arithmetic details', 'BSA-derived reference arithmetic');
