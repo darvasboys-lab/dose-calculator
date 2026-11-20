@@ -2223,7 +2223,7 @@ header.app-header h1 {
 
   // Session-only draft restoration. The public web app does not expose Sheet
   // records by an easily guessed four-digit CR. Do not use real patient data.
-  const crCachePrefix = 'pho-all-demo-cr:';
+  const crCachePrefix = 'pho-all-demo-cr-v2:';
   function rememberSavedInput(input) {
     if (!input || !/^\d{4}$/.test(String(input.demoId || ''))) return;
     const clean = Object.assign({}, input);
