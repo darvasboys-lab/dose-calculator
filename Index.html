@@ -2865,7 +2865,7 @@ header.app-header h1 {
     saveState.hidden = false;
     saveState.classList.remove('pending');
     saveState.classList.add('unsaved');
-    saveState.textContent = 'NOT SAVED · ' + reason;
+    saveState.textContent = 'SAVE NOT CONFIRMED · ' + reason;
     saveChoice.hidden = true;
     saveButton.disabled = false;
     saveButton.hidden = false;
@@ -2901,7 +2901,7 @@ header.app-header h1 {
     saveState.hidden = false;
     saveState.classList.remove('pending');
     saveState.classList.add('unsaved');
-    saveState.textContent = 'Removal failed · still saved · ' + reason;
+    saveState.textContent = 'Removal not confirmed · check the Sheet before retrying · ' + reason;
   }
 
   form.addEventListener('submit', e => {
@@ -3029,7 +3029,7 @@ header.app-header h1 {
       .withFailureHandler(err => {
         if (seq !== version) return;
         markRemoveFailed((err && err.message) || String(err));
-        message.textContent = 'Record kept or removal unconfirmed. You can retry.';
+        message.textContent = 'Removal status is uncertain. Check Sheets before retrying.';
       })
       .removeSavedAssessment(input);
   });
