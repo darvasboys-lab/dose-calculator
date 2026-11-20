@@ -151,11 +151,18 @@ requireIncludes(code, 'variant gene explanation', "': VARIANT selected — a thi
 requireIncludes(code, 'independent CBC-only arithmetic', 'cbcOnlyArithmetic: cbcOnlyArithmetic');
 requireIncludes(html, 'explain exact gene', 'stop-reason-specific');
 requireIncludes(html, 'explicit gene current values', "'TPMT: ' + label(input.tpmt)");
-requireIncludes(html, 'optional safety arithmetic expansion',
-  'View CBC-only calculation (not a treatment recommendation)');
+requireIncludes(html, 'visible CBC-only heading', "'CBC-only calculation'");
+requireIncludes(html, 'separate CBC panel', 'id="cbcOnlyResult"');
+requireIncludes(script, 'CBC panel rendered directly', 'cbcOnlyResult.appendChild(panel)');
+requireIncludes(script, 'CBC panel immediately shown', 'cbcOnlyResult.hidden = false');
+assert.ok(html.indexOf('id="cbcOnlyResult"') < html.indexOf('id="stopBox"'),
+  'CBC-only panel must be above the hard-stop alert in the report');
+assert.ok(!html.includes('View CBC-only calculation (not a treatment recommendation)'),
+  'CBC-only arithmetic must not require a click');
 requireIncludes(html, 'CBC-only numbers not called a prescription',
-  'They are not approved doses or instructions to administer either drug.');
-requireIncludes(html, 'stop status remains active', 'SAFETY FLAG REMAINS ACTIVE.');
+  'do not use them as ');
+requireIncludes(html, 'safety alert stays active', 'Safety checks below remain active.');
+requireIncludes(script, 'CBC panel cleared on edit', 'cbcOnlyResult.replaceChildren()');
 requireIncludes(html, 'mobile numeric keyboard inputmode', 'inputmode="decimal"');
 requireIncludes(html, 'stable stale-result layout', '#result.stale-while-typing');
 requireIncludes(script, 'stop per-key layout collapse', 'if (!busy && !saveBusy && !assessmentReady && !lastInput) return;');
