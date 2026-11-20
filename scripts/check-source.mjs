@@ -146,6 +146,16 @@ requireIncludes(code, 'oncologist-supplied ALT > 5 x ULN', 'x.alt > 5 * x.transU
 requireIncludes(code, 'oncologist-supplied bilirubin > 5 x ULN', 'x.bilirubin > 5 * x.biliULN');
 requireIncludes(code, 'clinic liver stop wording', 'Clinic liver rule: ALT >5 × ULN');
 requireIncludes(code, 'BFM lower bilirubin review retained', 'BFM liver review threshold: bilirubin >3 × ULN');
+requireIncludes(code, 'specific TPMT or NUDT15 stop', "'UNKNOWN selected — normal thiopurine metabolism");
+requireIncludes(code, 'variant gene explanation', "'VARIANT selected — a thiopurine pharmacogenetic change");
+requireIncludes(code, 'independent CBC-only arithmetic', 'cbcOnlyArithmetic: cbcOnlyArithmetic');
+requireIncludes(html, 'explain exact gene', 'stop-reason-specific');
+requireIncludes(html, 'explicit gene current values', "'TPMT: ' + label(input.tpmt)");
+requireIncludes(html, 'optional safety arithmetic expansion',
+  'View CBC-only calculation (not a treatment recommendation)');
+requireIncludes(html, 'CBC-only numbers not called a prescription',
+  'They are not approved doses or instructions to administer either drug.');
+requireIncludes(html, 'stop status remains active', 'SAFETY FLAG REMAINS ACTIVE.');
 requireIncludes(html, 'mobile numeric keyboard inputmode', 'inputmode="decimal"');
 requireIncludes(html, 'stable stale-result layout', '#result.stale-while-typing');
 requireIncludes(script, 'stop per-key layout collapse', 'if (!busy && !saveBusy && !assessmentReady && !lastInput) return;');
@@ -247,6 +257,34 @@ const documentedStableLft = assess({...fixture, ast: 440, alt: '',
   bilirubin: '', biliULN: '', transULN: 40, rising: 'no'});
 assert.equal(documentedStableLft.hardStop, false);
 assert.ok(documentedStableLft.candidate);
+
+
+const unknownGenetics = assess({...fixture, tpmt: 'unknown', nudt15: 'normal'});
+assert.equal(unknownGenetics.hardStop, true);
+assert.equal(unknownGenetics.candidate, null);
+assert.equal(unknownGenetics.cbcOnlyArithmetic.percentOfEntered, 100);
+assert.equal(unknownGenetics.cbcOnlyArithmetic.mpDaily, fixture.current6);
+assert.ok(unknownGenetics.stopReasons.some(reason =>
+  reason.includes('TPMT: UNKNOWN selected') && reason.includes('not been documented')));
+assert.ok(!unknownGenetics.stopReasons.some(reason => reason.includes('NUDT15:')));
+
+const variantGenetics = assess({...fixture, tpmt: 'normal', nudt15: 'variant'});
+assert.equal(variantGenetics.hardStop, true);
+assert.equal(variantGenetics.candidate, null);
+assert.ok(variantGenetics.stopReasons.some(reason =>
+  reason.includes('NUDT15: VARIANT selected')));
+assert.equal(variantGenetics.cbcOnlyArithmetic.mtxWeekly, fixture.currentM);
+
+const bothAbnormal = assess({...fixture, tpmt: 'unknown', nudt15: 'variant'});
+assert.equal(bothAbnormal.stopReasons.filter(reason => reason.startsWith('TPMT:') ||
+  reason.startsWith('NUDT15:')).length, 2);
+assert.equal(bothAbnormal.candidate, null);
+
+const lowCBCAndVariant = assess({...fixture, wbc: 900, anc: 400, alc: 200,
+  tpmt: 'variant'});
+assert.equal(lowCBCAndVariant.hardStop, true);
+assert.equal(lowCBCAndVariant.cbcOnlyArithmetic.percentOfEntered, 0);
+assert.equal(lowCBCAndVariant.candidate, null);
 
 const sourcedRules = assess({...fixture, rising: 'unassessed'}).rules;
 assert.equal(sourcedRules.length, 7);
