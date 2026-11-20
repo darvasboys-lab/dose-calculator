@@ -280,11 +280,12 @@ function assessCase(d) {
   if (clinicBilirubinStop) {
     stops.push('Clinic liver rule: bilirubin >5 × ULN — interrupt oral 6-MP/MTX; treating oncologist to confirm');
   }
-  // Retain the BFM 2009 bilirubin >3x review threshold below 5x so
-  // installing the clinic rule never silently weakens existing safeguards.
-  if (biliReady && x.bilirubin > 3 * x.biliULN &&
-      !clinicBilirubinStop) {
-    stops.push('BFM liver review threshold: bilirubin >3 × ULN; assess dose reduction');
+  // BFM considers dose reduction above 3x bilirubin ULN; this is a review
+  // criterion, not an automatic instruction to interrupt both drugs.
+  const bfmBilirubinReview = biliReady &&
+    x.bilirubin > 3 * x.biliULN && !clinicBilirubinStop;
+  if (bfmBilirubinReview) {
+    warnings.push('BFM liver review threshold: bilirubin >3 × ULN — review dose and clinical context; clinic interruption threshold is >5 × ULN');
   }
   if (transReady) {
     const above10 = (x.ast !== null && x.ast > 10 * x.transULN) ||
@@ -311,8 +312,7 @@ function assessCase(d) {
     rule('LFT', 'Liver tests',
       clinicDetail + '; ' +
       ((!biliReady || !transReady) ? 'some measurements or ULN missing' : 'LFT values and ULNs supplied'),
-      clinicAltStop || clinicBilirubinStop ||
-        (biliReady && x.bilirubin > 3 * x.biliULN));
+      clinicAltStop || clinicBilirubinStop || bfmBilirubinReview);
   }
   rule('RFT', 'Renal tests',
     x.creatinine === null ? 'Not entered; renal dosing rules not supplied' :
@@ -342,7 +342,7 @@ function assessCase(d) {
     stops.length > 0);
 
   let factor = tableFactor;
-  if (stops.length || d.adherence !== 'good' || x.anc < 750) factor = null;
+  if (stops.length || d.adherence !== 'good' || x.anc < 750 || bfmBilirubinReview) factor = null;
   let status;
   if (stops.length) {
     status = 'HARD STOP — CLINICIAN REVIEW';
