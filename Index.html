@@ -1563,11 +1563,11 @@ header.app-header h1 {
   <ul id="warnings"></ul>
 
   <div id="saveChoice" class="save-choice" hidden>
-    <p class="save-choice-title">Save to Google Sheets?</p>
+    <p class="save-choice-title">Remove from Sheets?</p>
     <div class="save-choice-actions">
-      <button id="saveYes" class="save-choice-btn yes"
+      <button id="saveYes" class="save-choice-btn no"
               type="button">Yes</button>
-      <button id="saveNo" class="save-choice-btn no"
+      <button id="saveNo" class="save-choice-btn yes"
               type="button">No</button>
     </div>
   </div>
@@ -2833,7 +2833,7 @@ header.app-header h1 {
     message.textContent = detail;
   }
 
-  /* CALCULATE FIRST — THE DOCTOR CHOOSES WHETHER TO SAVE */
+  /* CALCULATE AND SAVE BY DEFAULT — OPTIONAL REMOVE OF THIS ENTRY */
 
   function markSavePending() {
     saveState.hidden = false;
@@ -2854,10 +2854,10 @@ header.app-header h1 {
     const time = when ? new Date(when).toLocaleString() : '';
     saveState.textContent = 'Saved to Google Sheets · CR ' + input.demoId +
       (time ? ' · ' + time : '');
-    saveChoice.hidden = true;
     saveButton.hidden = true;
     saveButton.disabled = true;
     rememberSavedInput(input);
+    showRemoveChoice();
   }
 
   function markSaveFailed(reason) {
@@ -2871,11 +2871,37 @@ header.app-header h1 {
     saveButton.hidden = false;
   }
 
-  function showSaveChoice() {
-    if (!assessmentReady || saved || saveBusy) return;
+  function showRemoveChoice() {
+    if (!assessmentReady || !saved || saveBusy) return;
     saveChoice.hidden = false;
     saveYes.disabled = false;
     saveNo.disabled = false;
+  }
+
+  function markRemoved(input) {
+    saved = false;
+    saveBusy = false;
+    saveDeclined = false;
+    saveChoice.hidden = true;
+    saveButton.hidden = true;
+    saveButton.disabled = true;
+    saveState.hidden = false;
+    saveState.classList.remove('pending', 'unsaved');
+    saveState.textContent = 'Removed from Google Sheets · CR ' + input.demoId;
+    try {
+      window.sessionStorage.removeItem(crCachePrefix + input.demoId);
+    } catch (_) { /* Session storage may be blocked. */ }
+  }
+
+  function markRemoveFailed(reason) {
+    saveBusy = false;
+    saveChoice.hidden = false;
+    saveYes.disabled = false;
+    saveNo.disabled = false;
+    saveState.hidden = false;
+    saveState.classList.remove('pending');
+    saveState.classList.add('unsaved');
+    saveState.textContent = 'Removal failed · still saved · ' + reason;
   }
 
   form.addEventListener('submit', e => {
@@ -2900,6 +2926,7 @@ header.app-header h1 {
     resetTransientNotices();
     const seq = ++version;
     busy = true;
+    saveBusy = true;
     saved = false;
     saveDeclined = false;
     assessmentReady = false;
@@ -2920,7 +2947,8 @@ header.app-header h1 {
     saveState.hidden = true;
     saveState.textContent = '';
     saveButton.hidden = true;
-    message.textContent = 'Calculating assessment…';
+    message.textContent = 'Calculating and saving to Google Sheets…';
+    markSavePending();
 
     window.requestAnimationFrame(() => {
       if (seq === version) result.scrollIntoView({behavior: 'smooth', block: 'start'});
@@ -2929,79 +2957,94 @@ header.app-header h1 {
     previewWatchdog = window.setTimeout(() => {
       if (seq !== version || !busy) return;
       unlockCalculate();
-      reportError('Assessment timed out. Check the connection and try again.');
+      saveBusy = false;
+      reportError('Assessment timed out. Save status may be unknown; check the Sheet before submitting again.');
     }, 25000);
 
-    // Read-only calculation. No Sheet write occurs until Yes is clicked.
+    // One server request calculates and saves, including hard-stop records.
     google.script.run
-      .withSuccessHandler(assessment => {
+      .withSuccessHandler(payload => {
         if (seq !== version) return;
         clearRequestWatchdogs();
         unlockCalculate();
         try {
+          const assessment = payload && payload.assessment;
           if (!showReport(assessment, seq, input)) {
-            message.textContent = 'Could not display the assessment. Please retry.';
+            message.textContent = 'Could not display the assessment. Check the saved record in Sheets.';
+            saveBusy = false;
             return;
           }
           assessmentReady = true;
-          message.textContent = 'Assessment calculated. Choose whether to save.';
-          showSaveChoice();
+          if (payload && payload.saved === true) {
+            markSaved(input, payload.savedAt);
+            message.textContent = 'Saved automatically. Remove this entry only if needed.';
+          } else {
+            saveBusy = false;
+            markSaveFailed((payload && payload.saveError) ||
+              'Google Sheets did not confirm a saved record.');
+            message.textContent = 'Assessment calculated, but not saved. Retry save is available.';
+          }
         } catch (err) {
           console.error('PHO assessment display error:', err);
-          reportError('Could not display the assessment. Please retry.');
+          saveBusy = false;
+          reportError('Could not display the assessment. Check the Sheet for its save status.');
         }
       })
       .withFailureHandler(err => {
         if (seq !== version) return;
         clearRequestWatchdogs();
         unlockCalculate();
+        saveBusy = false;
         reportError('Assessment unavailable: ' +
           ((err && err.message) || String(err)));
-      })
-      .assessCase(input);
-  });
-
-  saveYes.addEventListener('click', () => {
-    if (!assessmentReady || saved || saveBusy || !lastInput) return;
-    if (!(window.google && google.script && google.script.run)) return;
-    const input = Object.assign({}, lastInput);
-    const seq = version;
-    saveDeclined = false;
-    saveBusy = true;
-    markSavePending();
-    google.script.run
-      .withSuccessHandler(payload => {
-        if (seq !== version) return;
-        saveBusy = false;
-        if (payload && payload.saved === true) {
-          markSaved(input, payload.savedAt);
-          message.textContent = 'Saved to Google Sheets.';
-        } else {
-          markSaveFailed((payload && payload.saveError) ||
-            'Google Sheets did not confirm a saved record.');
-          message.textContent = 'Assessment displayed but not saved.';
-        }
-      })
-      .withFailureHandler(err => {
-        if (seq !== version) return;
-        saveBusy = false;
-        markSaveFailed((err && err.message) || String(err));
-        message.textContent = 'Save failed. You can retry.';
       })
       .assessAndSave(input);
   });
 
-  saveNo.addEventListener('click', () => {
-    if (!assessmentReady || saved || saveBusy) return;
-    saveDeclined = true;
+  // Yes = remove ONLY the entry just saved by this calculation.
+  // The backend verifies the unpredictable assessment ID and complete input.
+  saveYes.addEventListener('click', () => {
+    if (!assessmentReady || !saved || saveBusy || !lastInput) return;
+    if (!(window.google && google.script && google.script.run)) return;
+    const input = Object.assign({}, lastInput);
+    const seq = version;
+    saveBusy = true;
+    saveYes.disabled = true;
+    saveNo.disabled = true;
     saveState.hidden = false;
-    saveState.classList.remove('pending');
-    saveState.classList.add('unsaved');
-    saveState.textContent = 'Not saved · No selected';
-    // Leave Yes available in case the user changes their decision.
-    message.textContent = 'Result remains visible; nothing was saved.';
+    saveState.classList.remove('unsaved');
+    saveState.classList.add('pending');
+    saveState.textContent = 'Removing this calculation from Google Sheets…';
+    google.script.run
+      .withSuccessHandler(payload => {
+        if (seq !== version) return;
+        if (payload && payload.removed === true) {
+          markRemoved(input);
+          message.textContent = 'This calculation was removed from Sheets.';
+        } else {
+          markRemoveFailed('Removal was not confirmed.');
+          message.textContent = 'Record kept. Removal was not confirmed.';
+        }
+      })
+      .withFailureHandler(err => {
+        if (seq !== version) return;
+        markRemoveFailed((err && err.message) || String(err));
+        message.textContent = 'Record kept or removal unconfirmed. You can retry.';
+      })
+      .removeSavedAssessment(input);
   });
 
+  // No = keep the assessment that was ALREADY saved.
+  saveNo.addEventListener('click', () => {
+    if (!assessmentReady || !saved || saveBusy) return;
+    saveDeclined = true;
+    saveChoice.hidden = true;
+    saveState.hidden = false;
+    saveState.classList.remove('unsaved', 'pending');
+    message.textContent = 'Saved assessment retained in Google Sheets.';
+  });
+
+  // Explicit retry only if automatic saving failed; reuse the SAME request ID.
   saveButton.addEventListener('click', () => {
     if (!lastInput || !assessmentReady || busy || saveBusy || saved) return;
     const input = Object.assign({}, lastInput);
