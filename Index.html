@@ -1043,6 +1043,9 @@ select[name="rising"] {
 .report-tablet-dot.scored::after{content:"";display:block;width:1px;height:15px;margin:1px auto;background:#adb9c0;transform:rotate(26deg);}
 .report-tablet-dot.half{width:10px;height:20px;border-radius:0 100% 100% 0;border-left:0;}
 .report-tablet-extra{font-size:10px;color:#788897;}
+.report-rule-source{overflow-wrap:anywhere;word-break:break-word;}
+/* Preserve keyboard focus and content width on compact phones. */
+.cbc-field .stepper input[type="number"]{min-width:0;}
 .report-hero .report-change{display:block;margin-top:7px;font-size:18px;color:#32536b;font-weight:770;}
 @media(max-width:365px){.report-drug-header{grid-template-columns:minmax(0,1fr) minmax(108px,max-content)}.report-tablet-dot{width:17px;height:17px}.report-tablet-dot.half{width:8.5px;height:17px}}
 
