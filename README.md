@@ -47,7 +47,7 @@ The result also checks **ANC (stated target 750–1,500/µL)**, **ALC below 300/
 
 ## Verification against two supplied clinical protocols
 
-The 20 November 2026 **local oncologist rule** was added: with available ALT or bilirubin and the corresponding ULN, **ALT >5 × ULN OR bilirubin >5 × ULN** blocks both candidate-dose displays and records the clinic-specific interruption instruction for oncologist confirmation. The pre-existing BFM bilirubin threshold at **>3 × ULN** remains as a separate review/hard-stop threshold; do not mistake it for the new >5 interruption criterion. No LFT result means this particular check cannot run.
+The 20 November 2026 **local oncologist rule** was added: with available ALT or bilirubin and the corresponding ULN, **ALT >5 × ULN OR bilirubin >5 × ULN** blocks both candidate-dose displays and records the clinic-specific interruption instruction for oncologist confirmation. The BFM bilirubin threshold **>3 × ULN and up to 5 × ULN** is now treated as **review required (no numerical candidate, but not labelled interruption)**. The clinic's **>5 × ULN** threshold is a separate hard stop. No LFT result means this particular check cannot run.
 
 The source documents supplied for review are **AIEOP-BFM ALL 2009 Study 9, v1.2, 15 April 2011, pp. 155–156** (PDF pp. 165–166) and **ICiCLe ALL-14/InPOG-ALL-15-01, v4.0, 2 May 2018, Appendix 14 p. 167** (PDF p. 167). They are **not interchangeable**:
 
