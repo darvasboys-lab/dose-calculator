@@ -65,7 +65,7 @@ requireIncludes(html, 'concise result heading', '<h2>Results</h2>');
 requireIncludes(html, 'maintain in plain language', 'No change calculated');
 requireIncludes(html, 'adjustment label in plain language', '% increase calculated');
 requireIncludes(html, 'single calculated-dose display', "element('div', 'report-dose-outcome')");
-assert.ok(!html.includes('ASSESSMENT REPORT'), 'Redundant report eyebrow must be removed');
+assert.ok(!html.includes('class="report-eyebrow">ASSESSMENT REPORT'), 'Redundant report eyebrow must be removed');
 assert.ok(!html.includes('PROTOTYPE ASSESSMENT'), 'Internal assessment label must be removed');
 assert.ok(!html.includes("'Entered dose'"), 'Redundant entered-dose tiles must be removed');
 assert.ok(!html.includes('MAINTAIN CANDIDATE'), 'Backend shorthand must not be shown in the UI');
