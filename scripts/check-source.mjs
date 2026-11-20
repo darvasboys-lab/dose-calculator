@@ -173,6 +173,58 @@ const crInputHandler = script.slice(script.indexOf("cr.addEventListener('input'"
 assert.ok(!crInputHandler.includes('restoreCR('),
   'Do not do CR autofill during active typing');
 
+requireIncludes(crInputHandler, 'jump to final tab on completed CR', 'showTab(panels.length - 1)');
+requireIncludes(crInputHandler, 'bring Calculate into view', 'calculateButton.scrollIntoView');
+requireIncludes(crInputHandler, 'defer navigation until after input event', 'window.requestAnimationFrame');
+assert.ok(!crInputHandler.includes('google.script.run') &&
+          !crInputHandler.includes('.requestSubmit(') &&
+          !crInputHandler.includes('calculateButton.click('),
+  'Completing CR must navigate only, never automatically calculate/save');
+
+// Simulate four-digit entry without a browser to verify no early keyboard collapse.
+const inputListeners = {};
+const crMock = {
+  value: '',
+  blurCount: 0,
+  addEventListener(type, callback) { inputListeners[type] = callback; },
+  blur() { this.blurCount++; inputListeners.change(); }
+};
+const queuedFrames = [];
+const visitedTabs = [];
+const restoredCRs = [];
+let calculateScrolled = 0;
+new Function('cr', 'window', 'showTab', 'panels', 'calculateButton', 'restoreCR',
+  script.slice(script.indexOf("  cr.addEventListener('input'"),
+    script.indexOf('  /* INVALIDATE OLD RESULTS AND RELEASE STALE REQUESTS */'))
+)(
+  crMock,
+  {requestAnimationFrame(fn) { queuedFrames.push(fn); }},
+  index => visitedTabs.push(index),
+  [0,1,2,3],
+  {scrollIntoView() { calculateScrolled++; }},
+  number => restoredCRs.push(number)
+);
+for (const prefix of ['1', '12', '123']) {
+  crMock.value = prefix;
+  inputListeners.input();
+  assert.equal(queuedFrames.length, 0, 'No early navigation while typing ' + prefix);
+  assert.equal(crMock.blurCount, 0, 'Mobile number pad must stay open for ' + prefix);
+}
+crMock.value = '1234';
+inputListeners.input();
+assert.equal(queuedFrames.length, 1);
+assert.equal(visitedTabs.length, 0, 'Navigation should run after input propagation');
+queuedFrames.shift()();
+assert.deepEqual(visitedTabs, [3], 'Completed CR must open final tab');
+assert.deepEqual(restoredCRs, ['1234'], 'CR restoration must run on blur');
+assert.equal(calculateScrolled, 1, 'Calculate should be visible without three Next clicks');
+crMock.value = '5678';
+inputListeners.input();
+crMock.value = '567';
+queuedFrames.shift()();
+assert.equal(visitedTabs.length, 1, 'Aborted CR input must not navigate');
+
+
 
 
 // Confirm real arithmetic with fictional inputs, without Google Sheets access.
