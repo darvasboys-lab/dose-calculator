@@ -2439,7 +2439,8 @@ header.app-header h1 {
     const outcome = element('div', 'report-dose-outcome');
     outcome.appendChild(element('strong', 'report-dose-number', tablets));
     outcome.appendChild(element('span', 'report-dose-unit',
-      '× ' + strength + ' mg tablet(s) ' + interval));
+      'tablets ' + (interval === 'daily' ? 'once daily' : 'once weekly') +
+      ' (' + strength + ' mg each)'));
     drug.appendChild(outcome);
     drug.appendChild(element('p', 'report-pill-equivalent',
       'Calculated equivalent: ' + mg + (interval === 'daily' ? ' mg/day' : ' mg/week')));
