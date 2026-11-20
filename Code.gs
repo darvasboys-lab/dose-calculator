@@ -267,16 +267,36 @@ function assessCase(d) {
   const anyLft = [x.bilirubin, x.ast, x.alt].some(v => v !== null);
   const biliReady = x.bilirubin !== null && x.biliULN !== null;
   const transReady = x.transULN !== null && (x.ast !== null || x.alt !== null);
-  if (biliReady && x.bilirubin > 3 * x.biliULN) {
-    stops.push('Bilirubin above 3 × ULN');
+  // Local oncologist-supplied rule (not the identical threshold/wording
+  // used in BFM 2009 or ICiCLe 2018): ALT OR bilirubin > 5 x ULN.
+  // A blocked candidate is not an automated medication order.
+  const clinicAltStop = transReady && x.alt !== null &&
+    x.alt > 5 * x.transULN;
+  const clinicBilirubinStop = biliReady &&
+    x.bilirubin > 5 * x.biliULN;
+  if (clinicAltStop) {
+    stops.push('Clinic liver rule: ALT >5 × ULN — interrupt oral 6-MP/MTX; treating oncologist to confirm');
+  }
+  if (clinicBilirubinStop) {
+    stops.push('Clinic liver rule: bilirubin >5 × ULN — interrupt oral 6-MP/MTX; treating oncologist to confirm');
+  }
+  // Retain the BFM 2009 bilirubin >3x review threshold below 5x so
+  // installing the clinic rule never silently weakens existing safeguards.
+  if (biliReady && x.bilirubin > 3 * x.biliULN &&
+      !clinicBilirubinStop) {
+    stops.push('BFM liver review threshold: bilirubin >3 × ULN; assess dose reduction');
   }
   if (transReady) {
     const above10 = (x.ast !== null && x.ast > 10 * x.transULN) ||
                     (x.alt !== null && x.alt > 10 * x.transULN);
     const above20 = (x.ast !== null && x.ast > 20 * x.transULN) ||
                     (x.alt !== null && x.alt > 20 * x.transULN);
-    if (above10 && yes('rising')) stops.push('Rising AST/ALT above 10 × ULN');
-    if (above20) stops.push('AST/ALT above 20 × ULN');
+    if (above10 && yes('rising') && !clinicAltStop) {
+      stops.push('Rising AST/ALT above 10 × ULN');
+    }
+    if (above20 && !clinicAltStop) {
+      stops.push('AST/ALT above 20 × ULN');
+    }
   }
   if (!anyLft) {
     rule('LFT', 'Liver tests', 'Not entered; LFT checks not assessed', false);
@@ -285,10 +305,14 @@ function assessCase(d) {
         ((x.ast !== null || x.alt !== null) && !transReady)) {
       warnings.push('LFT entered without its upper-normal reference; full LFT threshold assessment is unavailable.');
     }
+    const clinicDetail = clinicAltStop || clinicBilirubinStop
+      ? 'Clinic >5 × ULN rule triggered (ALT or bilirubin): calculated doses blocked'
+      : 'Clinic ALT/bilirubin >5 × ULN rule not triggered by available results';
     rule('LFT', 'Liver tests',
-      'Optional results checked where values and ULN were supplied' +
-      ((!biliReady || !transReady) ? '; incomplete reference ranges' : ''),
-      (biliReady || transReady));
+      clinicDetail + '; ' +
+      ((!biliReady || !transReady) ? 'some measurements or ULN missing' : 'LFT values and ULNs supplied'),
+      clinicAltStop || clinicBilirubinStop ||
+        (biliReady && x.bilirubin > 3 * x.biliULN));
   }
   rule('RFT', 'Renal tests',
     x.creatinine === null ? 'Not entered; renal dosing rules not supplied' :
