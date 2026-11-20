@@ -228,7 +228,7 @@ function assessCase(d) {
   let wbcLabel;
   if (x.wbc < 1000) {
     wbcFactor = 0; wbcLabel = 'Below 1.0 × 10⁹/L → table level 0%';
-    stops.push('WBC below 1,000/µL — protocol lists 0%; clinician review of interruption required');
+    stops.push('Ma’am clinic WBC rule: below 1,000/µL → 0%; clinician review of interruption');
   } else if (x.wbc <= 2000) {
     wbcFactor = 0.5; wbcLabel = '1.0–2.0 × 10⁹/L → table level 50%';
   } else if (x.wbc <= 3000) {
@@ -271,7 +271,7 @@ function assessCase(d) {
       'Checked; no lymphocyte reduction');
 
   if (x.platelets < 50000) {
-    stops.push('Platelets below 50,000/µL — table level 0%; clinician review required');
+    stops.push('Ma’am clinic platelet rule: below 50,000/µL → 0%; clinician review required');
   }
   if (x.platelets >= 50000 && x.platelets <= 100000) {
     warnings.push('If therapy was held for low platelets, the supplied protocol requires >100,000/µL before considering restart.');
@@ -311,6 +311,20 @@ function assessCase(d) {
   if (bfmBilirubinReview) {
     warnings.push('BFM liver review threshold: bilirubin >3 × ULN — review dose and clinical context; clinic interruption threshold is >5 × ULN');
   }
+  // For BFM's rising transaminase threshold, an unassessed trend is not
+  // equivalent to a documented "No". A marked high AST/ALT with unknown
+  // trend needs review instead of silently passing the BFM rule.
+  const transaminaseOver10 = transReady && (
+    (x.ast !== null && x.ast > 10 * x.transULN) ||
+    (x.alt !== null && x.alt > 10 * x.transULN)
+  );
+  const trendNotAssessed = d.rising === 'unassessed' ||
+    d.rising === undefined || d.rising === '';
+  const trendReview = transaminaseOver10 && trendNotAssessed &&
+    !clinicAltStop;
+  if (trendReview) {
+    warnings.push('BFM §24.9.1.2: AST/ALT >10 × ULN, but rising trend unassessed; no dose calculated pending review.');
+  }
   if (transReady) {
     const above10 = (x.ast !== null && x.ast > 10 * x.transULN) ||
                     (x.alt !== null && x.alt > 10 * x.transULN);
@@ -338,10 +352,11 @@ function assessCase(d) {
     rule('LFT', 'LFT',
       clinicDetail + '; ' +
       ((!biliReady || !transReady) ? 'some measurements or ULN missing' : 'LFT values and ULNs supplied'),
-      clinicAltStop || clinicBilirubinStop || bfmBilirubinReview,
+      clinicAltStop || clinicBilirubinStop || bfmBilirubinReview || trendReview,
       SRC_CLINIC + ' (>5× ALT/bilirubin ULN) · BFM >3× bilirubin review: ' + SRC_BFM,
       clinicAltStop || clinicBilirubinStop ? 'Blocked: clinic >5× ULN interruption rule' :
         bfmBilirubinReview ? 'No candidate: BFM bilirubin >3× ULN review (not a clinic interruption)' :
+        trendReview ? 'No candidate: BFM transaminase trend rule cannot be assessed' :
           (!biliReady || !transReady) ? 'Partial check: missing result/ULN skipped' :
             'Checked: no LFT dose-block threshold reached');
   }
@@ -377,7 +392,8 @@ function assessCase(d) {
       'Checked: no additional safety hard stop');
 
   let factor = tableFactor;
-  if (stops.length || d.adherence !== 'good' || x.anc < 750 || bfmBilirubinReview) factor = null;
+  if (stops.length || d.adherence !== 'good' || x.anc < 750 ||
+      bfmBilirubinReview || trendReview) factor = null;
   let status;
   if (stops.length) {
     status = 'HARD STOP — CLINICIAN REVIEW';
