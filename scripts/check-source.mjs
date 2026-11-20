@@ -31,7 +31,7 @@ for (const label of ['Patient', 'CBC', 'LFT Panel', 'Clinical']) {
   requireIncludes(html, 'calculator tab', "'" + label + "'");
 }
 for (const id of ['tabs', 'result', 'output', 'stopBox', 'stopReasons',
-  'saveState', 'save', 'calculate']) {
+  'saveState', 'saveChoice', 'saveYes', 'saveNo', 'save', 'calculate']) {
   requireIncludes(html, 'element ID', 'id="' + id + '"');
 }
 for (const fn of ['function doGet(', 'function assessCase(', 'function assessAndSave(',
@@ -39,11 +39,23 @@ for (const fn of ['function doGet(', 'function assessCase(', 'function assessAnd
   requireIncludes(code, 'backend function', fn);
 }
 requireIncludes(code, 'mobile viewport metadata', ".addMetaTag('viewport'");
-requireIncludes(script, 'calculate and save', '.assessAndSave(input)');
+requireIncludes(script, 'preview without saving', '.assessCase(input)');
+requireIncludes(script, 'explicit Yes save', '.assessAndSave(input)');
 requireIncludes(script, 'retry failed saving', '.saveAssessment(input)');
+requireIncludes(script, 'Yes action', "saveYes.addEventListener('click'");
+requireIncludes(script, 'No action', "saveNo.addEventListener('click'");
+requireIncludes(script, 'save gate', 'if (!assessmentReady || saved || saveBusy || !lastInput) return;');
+requireIncludes(html, 'opt-in prompt after results', 'Save to Google Sheets?');
+requireIncludes(html, 'Yes green', '.save-choice-btn.yes { background: #188155; }');
+requireIncludes(html, 'No red', '.save-choice-btn.no { background: #c33f47; }');
+const beforeYes = script.split("saveYes.addEventListener('click'")[0];
+assert.ok(!beforeYes.includes('.assessAndSave(input)'),
+  'Assessment submit must not write to Sheets before explicit Yes');
+assert.ok(!script.includes('fetchSavedByCR('),
+  'Anonymous four-digit CR must not retrieve stored Sheet records');
 requireIncludes(code, 'backend Sheets history writer', 'persistAssessment_(d, assessment)');
 requireIncludes(code, 'no visitor identity attribution', 'Anonymous web submission');
-requireIncludes(html, 'simple saved confirmation', 'Saved automatically');
+requireIncludes(html, 'simple saved confirmation', 'Saved to Google Sheets · CR ');
 requireIncludes(html, 'retry save button', 'Retry save');
 assert.ok(!code.includes('publicReadOnly: true'), 'Saving must not be blocked in this prototype');
 requireIncludes(script, 'hard-stop handling', 'stopBox.hidden = !r.hardStop');
@@ -62,6 +74,12 @@ assert.ok(!html.includes('Build 2026.11.20'), 'Do not confuse source-build date 
 requireIncludes(code, 'Google Sheets menu title', "createMenu('PHO ALL Calculator')");
 requireIncludes(html, 'BSA arithmetic details', 'BSA-derived reference arithmetic');
 requireIncludes(html, 'concise result heading', '<h2>Results</h2>');
+const crPos = html.indexOf("field('CR Number (4 digits)'");
+const agePos = html.indexOf("'age', 'Age (years)'");
+assert.ok(crPos > 0 && crPos < agePos, 'CR entry must precede age at the top');
+requireIncludes(script, 'same-session CR restore', 'window.sessionStorage.getItem');
+requireIncludes(script, 'same-session snapshot after confirmed save', 'rememberSavedInput(input)');
+requireIncludes(script, 'choices restored visibly', 'selectChoice(choice, value)');
 requireIncludes(html, 'maintain in plain language', 'No change calculated');
 requireIncludes(html, 'adjustment label in plain language', '% increase calculated');
 requireIncludes(html, 'single calculated-dose display', "element('div', 'report-dose-outcome')");
