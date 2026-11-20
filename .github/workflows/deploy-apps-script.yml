@@ -111,6 +111,10 @@ jobs:
           fi
           cp "$GITHUB_WORKSPACE/Index.html" Index.html
 
+          # Stamp the next real Apps Script deployment version into the banner
+          # immediately before push (no visitor API call or OAuth pop-up).
+          node "$GITHUB_WORKSPACE/scripts/stamp-deployment-version.mjs"
+
           # Keep pulled appsscript.json, all other scripts and script properties.
           echo "Source files staged; all other cloned project files preserved."
           clasp show-file-status
@@ -126,4 +130,5 @@ jobs:
           clasp create-deployment \
             --deploymentId "$WEB_APP_DEPLOYMENT_ID" \
             --description "GitHub ${GITHUB_SHA:0:12}"
+          node "$GITHUB_WORKSPACE/scripts/stamp-deployment-version.mjs" --verify
           echo "Existing deployment updated. Check the live web app with synthetic data."
