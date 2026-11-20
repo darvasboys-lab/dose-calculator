@@ -2593,8 +2593,6 @@ header.app-header h1 {
         comparison.appendChild(element('p', 'report-rule-note',
           'Fractional 2.5 mg MTX tablet result: no tablet rounding was applied; confirm available formulation.'));
       }
-      comparison.appendChild(element('p', 'report-disclaimer',
-        'Unvalidated calculated candidates only — not a prescription or treatment order.'));
       output.appendChild(comparison);
     }
 
@@ -2641,21 +2639,19 @@ header.app-header h1 {
         r.ref6 + ' mg/day'));
       reference.appendChild(referenceLine('MTX · 20 × BSA',
         r.refM + ' mg/week'));
-      reference.appendChild(element('p', 'report-disclaimer',
-        'Separate mathematical references using unvalidated built-in coefficients. These are not candidate doses or prescribing recommendations.'));
       output.appendChild(reference);
     }
 
     output.appendChild(element('p', 'report-disclaimer',
-      'Clinical decision-support prototype only. Not validated for prescribing. The treating team must verify clinical decisions independently.'));
+      'Review the configured protocol and baseline dose before any treatment decision.'));
 
     // The repeated general cautions fade after three seconds, but remain
     // recoverable from a compact disclosure. Critical alerts stay visible.
     const safety = element('details', 'report-safety-details');
     safety.appendChild(element('summary', '', 'Safety notes'));
     safety.appendChild(element('p', '',
-      'Prototype only: calculations are not validated prescriptions. BSA references are ' +
-      'separate from dose candidates. Treatment decisions require clinician review.'));
+      'BSA reference figures are separate from calculated doses. The treating ' +
+      'oncologist determines dose changes, interruption and resumption.'));
     output.appendChild(safety);
     scheduleTransientNotices(seq);
 
