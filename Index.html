@@ -1021,47 +1021,25 @@ input[type=range]:focus-visible {
   font-size: 10px;
   font-weight: 590;
 }
-.report-dose-flow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr);
-  align-items: center;
-  column-gap: 8px;
-}
-.report-dose-cell { min-width: 0; }
-.report-dose-cell.final {
-  padding-left: 10px;
-  border-left: 1px solid #e6edf1;
-}
-.report-dose-label {
-  margin: 0 0 2px;
-  color: #8391a0;
-  font-size: 10px;
-  font-weight: 650;
+.report-dose-outcome {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  flex-wrap: wrap;
+  padding: 0 0 3px;
 }
 .report-dose-number {
-  display: block;
-  color: #51677a;
-  font-size: 24px;
-  font-weight: 710;
-  line-height: 1.2;
+  color: #17649b;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.15;
   font-variant-numeric: tabular-nums;
   letter-spacing: -.035em;
 }
-.report-dose-cell.final .report-dose-number {
-  color: #17649b;
-  font-weight: 800;
-}
 .report-dose-unit {
-  display: block;
-  margin-top: 1px;
-  color: #8a98a5;
-  font-size: 10px;
-}
-.report-dose-arrow {
-  color: #9aabba;
-  font-size: 20px;
-  font-weight: 350;
-  text-align: center;
+  color: #748597;
+  font-size: 12px;
+  font-weight: 610;
 }
 .report-formula {
   margin: 11px 0 0;
@@ -1390,8 +1368,7 @@ header.app-header h1 {
   aria-live="polite"></p>
 
 <section id="result" aria-label="Assessment report">
-  <div class="report-eyebrow">ASSESSMENT REPORT</div>
-  <h2>Assessment Summary</h2>
+  <h2>Results</h2>
 
   <div id="resultLoading" class="report-loading" hidden role="status">
     <span class="report-spinner" aria-hidden="true"></span>
@@ -2260,25 +2237,18 @@ header.app-header h1 {
 
   function reportDrug(name, interval, oldValue, suggestedValue, percent) {
     const drug = element('div', 'report-drug');
-    const header = element('p', 'report-drug-name', name + ' ');
-    header.appendChild(element('small', '', '· ' + interval));
-    drug.appendChild(header);
+    drug.appendChild(element('p', 'report-drug-name', name));
+    const outcome = element('div', 'report-dose-outcome');
+    outcome.appendChild(element('strong', 'report-dose-number', suggestedValue));
+    outcome.appendChild(element('span', 'report-dose-unit', interval));
+    drug.appendChild(outcome);
 
-    const compare = element('div', 'report-dose-flow');
-    function side(label, value, isFinal) {
-      const cell = element('div', 'report-dose-cell' + (isFinal ? ' final' : ''));
-      cell.appendChild(element('div', 'report-dose-label', label));
-      cell.appendChild(element('strong', 'report-dose-number', value));
-      cell.appendChild(element('span', 'report-dose-unit', interval));
-      return cell;
-    }
-    compare.appendChild(side('Entered dose', oldValue, false));
-    compare.appendChild(element('div', 'report-dose-arrow', '→'));
-    compare.appendChild(side('Calculated candidate', suggestedValue, true));
-    drug.appendChild(compare);
+    // Keep the arithmetic traceable without repeating the input as a
+    // second prominent dose or presenting two confusing dose columns.
     const factor = (1 + percent / 100).toFixed(2);
     drug.appendChild(element('p', 'report-formula',
-      'Calculation: ' + oldValue + ' × ' + factor + ' = ' + suggestedValue + ' ' + interval));
+      'Calculation: ' + oldValue + ' × ' + factor + ' = ' +
+      suggestedValue + ' ' + interval));
     return drug;
   }
 
@@ -2313,8 +2283,13 @@ header.app-header h1 {
       (!r.candidate ? ' review' : (percent === 0 ? ' maintain' : ''));
     const hero = element('div', 'report-hero' + tone);
     const lead = element('div', 'report-hero-main');
-    lead.appendChild(element('span', 'report-label', 'PROTOTYPE ASSESSMENT'));
-    lead.appendChild(element('div', 'report-strong', r.status || 'Review required'));
+    // Replace internal rule-engine terminology with plain language.
+    const statusText = r.hardStop ? 'Clinical review required' :
+      !r.candidate ? 'Review required' :
+      percent === 0 ? 'No change calculated' :
+      percent > 0 ? percent + '% increase calculated' :
+        Math.abs(percent) + '% decrease calculated';
+    lead.appendChild(element('div', 'report-strong', statusText));
 
     const reason = r.hardStop
       ? 'Safety flag detected. Automated dose candidates are blocked.'
@@ -2350,9 +2325,7 @@ header.app-header h1 {
     } else {
       const comparison = element('div', 'report-dose');
       comparison.appendChild(element('h3', 'report-section-heading',
-        'Illustrative dose comparison'));
-      comparison.appendChild(element('p', 'report-section-subtitle',
-        'Entered dose compared with the calculated candidate'));
+        'Calculated dose values'));
 
       const ruleNote = percent === 0
         ? 'No change generated: the entered doses and calculated candidates are equal because the CBC rule applied 0%.'
