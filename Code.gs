@@ -19,7 +19,7 @@ const CFG = Object.freeze({
   ancLow: 750,
   ancHigh: 1500,
   adjustment: 0.10,
-  algorithmVersion: 'PROPOSED-CBC-2026-11-20'
+  algorithmVersion: 'CLINIC-PRIORITY-BFM-TRACE-v1'
 });
 
 const HISTORY_HEADERS = [
@@ -139,10 +139,10 @@ function optional_(d, key) {
 }
 
 function assessCase(d) {
-  // PROPOSED MAINTENANCE TABLE: illustrative logic for synthetic testing only.
-  // These percentage levels refer here to the ENTERED doses, which may differ
-  // from a protocol's standard/previously attained 100% dose. This is not a
-  // validated dose-prescribing engine.
+  // Ma'am's clinic WBC bands take precedence; BFM 2009 section 24.9.1.2
+  // supports WBC-guided titration but does not specify identical fixed
+  // percentage jumps. ANC target also agrees with ICiCLe Appendix 14.
+  // Percentages here scale the entered dose, not a documented full-dose baseline.
   const sixTablets = optional_(d, 'current6Tabs');
   const mtxTablets = optional_(d, 'currentMTabs');
   if (sixTablets !== null && !Number.isInteger(sixTablets * 2)) {
@@ -189,7 +189,7 @@ function assessCase(d) {
     throw new Error('AST/ALT ULN must be at least 1.');
   }
   const options = {
-    rising: ['yes', 'no'], fever: ['yes', 'no'],
+    rising: ['yes', 'no', 'unassessed'], fever: ['yes', 'no'],
     infection: ['yes', 'no'], jaundice: ['yes', 'no'],
     mucositis: ['yes', 'no'],
     tpmt: ['normal', 'variant', 'unknown'],
@@ -212,9 +212,17 @@ function assessCase(d) {
   const warnings = [];
   const rules = [];
   const yes = key => d[key] === 'yes';
-  function rule(id, title, detail, affected) {
-    rules.push({id: id, title: title, detail: detail, affected: !!affected});
+  // Each check records the source and explains calculation/limit/block/skip.
+  function rule(id, title, detail, affected, source, outcome) {
+    rules.push({
+      id: id, title: title, detail: detail, affected: !!affected,
+      source: source || 'Clinic safety screening',
+      outcome: outcome || (affected ? 'Applied' : 'Checked; no change')
+    });
   }
+  const SRC_CLINIC = 'Ma’am — clinic maintenance rules (20 Nov 2026)';
+  const SRC_BFM = 'AIEOP-BFM ALL 2009 §24.9.1.2, pp.155–156';
+  const SRC_ICICLE = 'ICiCLe ALL-14 Appendix 14, p.167';
 
   let wbcFactor = 1;
   let wbcLabel;
@@ -229,7 +237,11 @@ function assessCase(d) {
     wbcFactor = 1.5; wbcLabel = 'Above 3.0 × 10⁹/L → up to 150% of entered dose';
   }
   rule('WBC', 'White blood cells',
-    (x.wbc / 1000).toFixed(2) + ' × 10⁹/L; ' + wbcLabel, true);
+    (x.wbc / 1000).toFixed(2) + ' × 10⁹/L; ' + wbcLabel, true,
+    SRC_CLINIC + ' · WBC titration principle in ' + SRC_BFM,
+    wbcFactor === 0 ? 'Blocked: clinic WBC <1,000/µL, table level 0%' :
+      'Starting level: ' + Math.round(wbcFactor * 100) +
+      '% from clinic WBC table; subsequent rules may limit or block it');
 
   if (x.anc < 500) {
     stops.push('ANC below 500/µL — clinician review required');
@@ -240,15 +252,23 @@ function assessCase(d) {
   }
   rule('ANC', 'Neutrophils (ANC)',
     x.anc.toLocaleString('en-US') + '/µL; ' +
-    (x.anc >= 750 && x.anc <= 1500 ? 'within stated target (750–1,500/µL)' :
-      'outside stated target (750–1,500/µL)'), x.anc < 750);
+    (x.anc >= 750 && x.anc <= 1500 ? 'within target (750–1,500/µL)' :
+      'outside target (750–1,500/µL)'), x.anc < 750,
+    SRC_CLINIC + ' · ANC target also in ' + SRC_ICICLE,
+    x.anc < 500 ? 'Blocked: ANC <500/µL safety criterion' :
+      x.anc < 750 ? 'No numerical candidate: ANC below clinic target' :
+        x.anc > 1500 ? 'Above target: review note; WBC table still evaluated' :
+          'Within target: no ANC-based reduction');
 
   const alcLow = x.alc < 300;
   const tableFactor = alcLow ? Math.min(wbcFactor, 0.5) : wbcFactor;
   rule('ALC', 'Lymphocytes (ALC)',
     x.alc.toLocaleString('en-US') + '/µL; ' +
-    (alcLow ? 'below 300/µL → 50% level limits the WBC result' :
-      '300/µL or higher → no additional 50% limit'), alcLow);
+    (alcLow ? 'below 300/µL → clinic 50% ceiling' :
+      '300/µL or higher → no additional limit'), alcLow,
+    SRC_CLINIC + ' · BFM also reduces at ALC <300/µL: ' + SRC_BFM,
+    alcLow ? 'Limits dose level to the lower of WBC level and 50%' :
+      'Checked; no lymphocyte reduction');
 
   if (x.platelets < 50000) {
     stops.push('Platelets below 50,000/µL — table level 0%; clinician review required');
@@ -258,11 +278,15 @@ function assessCase(d) {
   }
   rule('PLT', 'Platelets',
     x.platelets.toLocaleString('en-US') + '/µL; ' +
-    (x.platelets < 50000 ? 'below 50,000/µL → table level 0%' :
+    (x.platelets < 50000 ? 'below 50,000/µL → clinic 0% level' :
       x.platelets <= 100000
-        ? '50,000–100,000/µL; below the stated >100,000/µL restart threshold'
-        : 'above 100,000/µL; platelet recovery threshold met (not independent restart clearance)'),
-    x.platelets < 50000 || x.platelets <= 100000);
+        ? '50,000–100,000/µL; below clinic >100,000/µL restart requirement'
+        : 'above 100,000/µL; platelet recovery threshold met, not independent restart approval'),
+    x.platelets <= 100000,
+    SRC_CLINIC + ' · low-platelet reduction also in ' + SRC_BFM,
+    x.platelets < 50000 ? 'Blocked: platelet count below clinic 50,000/µL threshold' :
+      x.platelets <= 100000 ? 'If therapy was held, clinic restart threshold not met; hold history unknown' :
+        'Checked: no platelet reduction; restart depends on treatment history');
 
   const anyLft = [x.bilirubin, x.ast, x.alt].some(v => v !== null);
   const biliReady = x.bilirubin !== null && x.biliULN !== null;
@@ -300,7 +324,9 @@ function assessCase(d) {
     }
   }
   if (!anyLft) {
-    rule('LFT', 'Liver tests', 'Not entered; LFT checks not assessed', false);
+    rule('LFT', 'LFT', 'No values entered; ALT/bilirubin thresholds not evaluated', false,
+      SRC_CLINIC + ' (>5× ULN) · BFM bilirubin review: ' + SRC_BFM,
+      'Skipped: LFT values unavailable');
   } else {
     if ((x.bilirubin !== null && !biliReady) ||
         ((x.ast !== null || x.alt !== null) && !transReady)) {
@@ -309,15 +335,21 @@ function assessCase(d) {
     const clinicDetail = clinicAltStop || clinicBilirubinStop
       ? 'Clinic >5 × ULN rule triggered (ALT or bilirubin): calculated doses blocked'
       : 'Clinic ALT/bilirubin >5 × ULN rule not triggered by available results';
-    rule('LFT', 'Liver tests',
+    rule('LFT', 'LFT',
       clinicDetail + '; ' +
       ((!biliReady || !transReady) ? 'some measurements or ULN missing' : 'LFT values and ULNs supplied'),
-      clinicAltStop || clinicBilirubinStop || bfmBilirubinReview);
+      clinicAltStop || clinicBilirubinStop || bfmBilirubinReview,
+      SRC_CLINIC + ' (>5× ALT/bilirubin ULN) · BFM >3× bilirubin review: ' + SRC_BFM,
+      clinicAltStop || clinicBilirubinStop ? 'Blocked: clinic >5× ULN interruption rule' :
+        bfmBilirubinReview ? 'No candidate: BFM bilirubin >3× ULN review (not a clinic interruption)' :
+          (!biliReady || !transReady) ? 'Partial check: missing result/ULN skipped' :
+            'Checked: no LFT dose-block threshold reached');
   }
-  rule('RFT', 'Renal tests',
-    x.creatinine === null ? 'Not entered; renal dosing rules not supplied' :
-      'Creatinine ' + x.creatinine + ' mg/dL recorded; no renal dosing threshold supplied',
-    false);
+  rule('KFT', 'KFT',
+    x.creatinine === null ? 'Not entered' :
+      'Creatinine ' + x.creatinine + ' mg/dL recorded',
+    false, 'No KFT-based modification supplied by Ma’am',
+    'Skipped: no KFT dose threshold supplied');
 
   // Existing conservative safety checks remain separate from CBC table.
   if (yes('fever')) stops.push('Fever reported: clinical assessment required');
@@ -337,9 +369,12 @@ function assessCase(d) {
     warnings.push('Adherence not confirmed; do not auto-titrate');
   }
   rule('SAFETY', 'Clinical safety checks',
-    stops.length ? stops.length + ' review/hard-stop reason(s) recorded' :
-      'No configured symptom/genetic safety stop triggered',
-    stops.length > 0);
+    stops.length ? stops.length + ' hard-stop reason(s) recorded' :
+      'No symptom/genetic hard stop triggered',
+    stops.length > 0,
+    'Existing clinic safety screening; severe-infection review also in ' + SRC_BFM,
+    stops.length ? 'Blocked: hard-stop condition present' :
+      'Checked: no additional safety hard stop');
 
   let factor = tableFactor;
   if (stops.length || d.adherence !== 'good' || x.anc < 750 || bfmBilirubinReview) factor = null;
