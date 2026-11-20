@@ -2701,8 +2701,7 @@ header.app-header h1 {
       rulesBox.appendChild(element('p', 'report-rules-count',
         r.rulesChecked + ' checks · ' + r.rulesAffecting +
         ' affecting the result · ' + skippedRules + ' skipped'));
-      rulesBox.appendChild(element('p', 'report-rules-count',
-        'Clinic instructions have priority; protocol references are identified under each rule.'));
+
       const list = element('ul', 'report-rules-list');
       r.rules.forEach(entry => {
         const line = element('li', entry.affected ? 'affects' : '');
@@ -2711,9 +2710,18 @@ header.app-header h1 {
         if (entry.outcome) {
           line.appendChild(element('p', 'report-rule-outcome', entry.outcome));
         }
-        if (entry.source) {
-          line.appendChild(element('p', 'report-rule-source', 'Rule source: ' + entry.source));
-        }
+        // Only the PDF name appears; clinic-only rules have no PDF source.
+        const bfmPdf = '1. Study9 Protocol Version 11 2 date15042011.pdf';
+        const iciclePdf =
+          '2_ICiCLe_Protocol_2014_latest_version_15_03_2018_final_Version_4.pdf';
+        let sourcePdf = '';
+        // Exact clinic WBC percentages are not specified in the BFM PDF.
+        if (entry.id === 'ANC') sourcePdf = iciclePdf;
+        if (entry.id === 'ALC' || entry.id === 'PLT') sourcePdf = bfmPdf;
+        if (entry.id === 'LFT' && entry.outcome &&
+            entry.outcome.includes('BFM')) sourcePdf = bfmPdf;
+        if (sourcePdf)
+          line.appendChild(element('p', 'report-rule-source', sourcePdf));
         list.appendChild(line);
       });
       rulesBox.appendChild(list);
@@ -2746,7 +2754,7 @@ header.app-header h1 {
       reference.appendChild(referenceLine('MTX · 20 × BSA',
         r.refM + ' mg/week'));
       reference.appendChild(element('p', 'report-rule-source',
-        'Reference: AIEOP-BFM ALL 2009 §24.9.1.3, p.156 (50 mg/m²/day 6-MP; 20 mg/m²/week MTX).'));
+        '1. Study9 Protocol Version 11 2 date15042011.pdf'));
       output.appendChild(reference);
     }
 
