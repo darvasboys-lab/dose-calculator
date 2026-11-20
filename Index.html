@@ -1121,6 +1121,7 @@ select[name="rising"] {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  margin-top: 12px;
 }
 .report-tile {
   min-width: 0;
@@ -2787,7 +2788,6 @@ header.app-header h1 {
     facts.appendChild(metric('TABLE LEVEL',
       r.hardStop ? 'Blocked' :
         r.candidate ? r.candidate.percentOfEntered + '%' : 'Review'));
-    output.appendChild(facts);
 
     if (r.hardStop) {
       output.appendChild(element('div', 'report-no-dose',
@@ -2817,6 +2817,10 @@ header.app-header h1 {
       }
       output.appendChild(comparison);
     }
+
+    // Drug/tablet values are the primary result; BSA and table level sit
+    // immediately below them. This changes report order only, not dosage.
+    output.appendChild(facts);
 
     // Show exactly which rule checks were performed.
     if (Array.isArray(r.rules) && r.rules.length > 0) {
