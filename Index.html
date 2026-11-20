@@ -2724,7 +2724,7 @@ header.app-header h1 {
         if (entry.id === 'LFT' && entry.outcome &&
             entry.outcome.includes('BFM')) sourcePdf = bfmPdf;
         if (sourcePdf)
-          line.appendChild(element('p', 'report-rule-source', sourcePdf));
+          line.appendChild(element('p', 'report-rule-source', 'SOURCE - ' + sourcePdf));
         list.appendChild(line);
       });
       rulesBox.appendChild(list);
@@ -2757,7 +2757,7 @@ header.app-header h1 {
       reference.appendChild(referenceLine('MTX · 20 × BSA',
         r.refM + ' mg/week'));
       reference.appendChild(element('p', 'report-rule-source',
-        '1. Study9 Protocol Version 11 2 date15042011.pdf'));
+        'SOURCE - 1. Study9 Protocol Version 11 2 date15042011.pdf'));
       output.appendChild(reference);
     }
 
