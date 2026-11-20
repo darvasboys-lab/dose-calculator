@@ -121,6 +121,8 @@ requireIncludes(script, 'rule outcome display', "entry.outcome");
 requireIncludes(html, 'BFM PDF filename', '1. Study9 Protocol Version 11 2 date15042011.pdf');
 requireIncludes(html, 'ICiCLe PDF filename',
   '2_ICiCLe_Protocol_2014_latest_version_15_03_2018_final_Version_4.pdf');
+requireIncludes(script, 'rule PDF source prefix', "'SOURCE - ' + sourcePdf");
+requireIncludes(html, 'BSA PDF source prefix', 'SOURCE - 1. Study9 Protocol Version 11 2 date15042011.pdf');
 assert.ok(!script.includes("'Rule source: ' + entry.source"),
   'Only PDF titles are shown in the result, not clinic-source text');
 requireIncludes(html, 'simple LFT KFT heading', "title: 'LFT and KFT'");
