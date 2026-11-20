@@ -61,6 +61,15 @@ assert.ok(!html.includes('Build 2026.11.20'), 'Do not confuse source-build date 
 
 requireIncludes(code, 'Google Sheets menu title', "createMenu('PHO ALL Calculator')");
 requireIncludes(html, 'BSA arithmetic details', 'BSA-derived reference arithmetic');
+requireIncludes(html, 'concise result heading', '<h2>Results</h2>');
+requireIncludes(html, 'maintain in plain language', 'No change calculated');
+requireIncludes(html, 'adjustment label in plain language', '% increase calculated');
+requireIncludes(html, 'single calculated-dose display', "element('div', 'report-dose-outcome')");
+assert.ok(!html.includes('ASSESSMENT REPORT'), 'Redundant report eyebrow must be removed');
+assert.ok(!html.includes('PROTOTYPE ASSESSMENT'), 'Internal assessment label must be removed');
+assert.ok(!html.includes("'Entered dose'"), 'Redundant entered-dose tiles must be removed');
+assert.ok(!html.includes('MAINTAIN CANDIDATE'), 'Backend shorthand must not be shown in the UI');
+
 requireIncludes(html, '0%-adjustment explanation', 'the CBC rule applied 0%');
 requireIncludes(html, 'visible multiplication', "' × ' + factor + ' = '");
 requireIncludes(html, '3-second noncritical notice timer', 'Math.max(0, 3000 - (Date.now() - disclaimerFirstShownAt))');
