@@ -76,6 +76,12 @@ Use environment-level variables and secrets, not a repository file. A protected 
 
 The first deployment will intentionally make the live script Code.gs and Index.html match GitHub, so back up online-only edits first.
 
+## Correct number in the gold welcome banner
+
+The welcome banner contains only **Updated to version N**. The Google Apps Script deployment number is not available directly in the browser without extra API permissions. The approved GitHub workflow now runs `scripts/stamp-deployment-version.mjs` in the cloned Apps Script project before pushing, then verifies that the new deployment matches the displayed number.
+
+For manual Windows deployments, download the latest `Index.html` and `Code.gs`, download the version helper outside the clasp project folder, run `node <path-to-helper>` from the `PHO-ALL-LiveDeploy` folder before `clasp push --force`, and run `node <path-to-helper> --verify` after updating the existing deployment. The helper refuses to proceed if it cannot read the actual previous version count.
+
 ## Future updates
 
 Once configured, pushing approved changes to Code.gs or Index.html on GitHub main triggers the same protected deployment workflow automatically. Required reviewers must still approve the job. Pull requests run a separate source checker that does not access Google credentials.
