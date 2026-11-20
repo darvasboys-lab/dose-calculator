@@ -114,7 +114,9 @@ requireIncludes(html, 'stable stale-result layout', '#result.stale-while-typing'
 requireIncludes(script, 'stop per-key layout collapse', 'if (!busy && !saveBusy && !assessmentReady && !lastInput) return;');
 requireIncludes(script, 'defer old result collapse to blur', "form.addEventListener('focusout'");
 requireIncludes(script, 'defer CR autofill to field exit', "cr.addEventListener('change'");
-assert.ok(!script.includes("restoreCR(cr.value);\n  });\n\n  /* INVALIDATE"),
+const crInputHandler = script.slice(script.indexOf("cr.addEventListener('input'"),
+  script.indexOf("cr.addEventListener('change'"));
+assert.ok(!crInputHandler.includes('restoreCR('),
   'Do not do CR autofill during active typing');
 
 
