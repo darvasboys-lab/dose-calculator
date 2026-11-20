@@ -146,8 +146,8 @@ requireIncludes(code, 'oncologist-supplied ALT > 5 x ULN', 'x.alt > 5 * x.transU
 requireIncludes(code, 'oncologist-supplied bilirubin > 5 x ULN', 'x.bilirubin > 5 * x.biliULN');
 requireIncludes(code, 'clinic liver stop wording', 'Clinic liver rule: ALT >5 × ULN');
 requireIncludes(code, 'BFM lower bilirubin review retained', 'BFM liver review threshold: bilirubin >3 × ULN');
-requireIncludes(code, 'specific TPMT or NUDT15 stop', "'UNKNOWN selected — normal thiopurine metabolism");
-requireIncludes(code, 'variant gene explanation', "'VARIANT selected — a thiopurine pharmacogenetic change");
+requireIncludes(code, 'specific TPMT or NUDT15 stop', "': UNKNOWN selected — normal thiopurine metabolism");
+requireIncludes(code, 'variant gene explanation', "': VARIANT selected — a thiopurine pharmacogenetic change");
 requireIncludes(code, 'independent CBC-only arithmetic', 'cbcOnlyArithmetic: cbcOnlyArithmetic');
 requireIncludes(html, 'explain exact gene', 'stop-reason-specific');
 requireIncludes(html, 'explicit gene current values', "'TPMT: ' + label(input.tpmt)");
