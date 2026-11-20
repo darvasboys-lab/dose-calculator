@@ -943,6 +943,63 @@ input[type=range]:focus-visible {
   line-height: 1.55;
 }
 
+/* Readable tablet outputs and explicit rule trace. */
+select[name="rising"] {
+  display: block;
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid #dce5ed;
+  border-radius: 10px;
+  background: #fff;
+  color: #344e61;
+  font: inherit;
+}
+.report-pill-equivalent {
+  margin: 5px 0 0;
+  color: #52697d;
+  font-size: 11px;
+  font-weight: 600;
+}
+.report-rules {
+  padding: 14px;
+  border: 1px solid #e1e9f0;
+  border-radius: 14px;
+  background: #fff;
+}
+.report-rules h3 {
+  margin: 0 0 10px;
+  color: #273f55;
+  font-size: 14px;
+  font-weight: 760;
+}
+.report-rules-count {
+  margin: -5px 0 9px;
+  color: #708596;
+  font-size: 11px;
+}
+.report-rules-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.report-rules-list li {
+  padding: 9px 0;
+  border-top: 1px solid #edf1f4;
+}
+.report-rules-list strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #344b5e;
+  font-size: 11.5px;
+}
+.report-rules-list span {
+  color: #6b7e8c;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.report-rules-list li.affects strong { color: #8b5d22; }
+
 /* Compact facts, not competing callouts */
 .report-grid {
   display: grid;
@@ -1710,22 +1767,26 @@ header.app-header h1 {
           </div>
         `,
 
-        plain(
-          'current6',
-          'Current 6-MP (mg/day)',
-          35
+        stepper(
+          'current6Tabs',
+          'Current 6-MP (50 mg tablets, once daily)',
+          1, 0.5, 20
         ),
 
-        plain(
-          'currentM',
-          'Current MTX (mg/week)',
-          20
+        stepper(
+          'currentMTabs',
+          'Current MTX (2.5 mg tablets, once weekly)',
+          4, 1, 100
         ),
 
-        `<p class="dose-prefill-note">
-          Prefilled example values only. Confirm the actual
-          prescribed doses before calculating.
-        </p>`
+        `<input type="hidden" name="current6" value="50">
+          <input type="hidden" name="currentM" value="10">
+          <p class="dose-prefill-note" id="currentDoseSummary">
+            6-MP: 50 mg/day · MTX: 10 mg/week
+          </p>
+          <p class="dose-prefill-note">
+            These are illustrative entered doses, not a verified prescription.
+          </p>`
       ].join('')
     },
 
@@ -1766,45 +1827,43 @@ header.app-header h1 {
       ].join('')
     },
 
-    /* 3. LFT PANEL */
+    /* 3. OPTIONAL LFT AND RFT */
 
     {
-      title: 'LFT Panel',
+      title: 'Liver and Kidney Tests (optional)',
       content: [
+        `<p class="dose-prefill-note">Leave unavailable values blank.
+          Only completed results are assessed. No renal dose rule has been supplied.</p>`,
         stepper(
-          'bilirubin',
-          'Total bilirubin (mg/dL)',
-          0.8, 0.1, 100
+          'bilirubin', 'Total bilirubin (mg/dL)',
+          '', 0.1, 100, false
         ),
-
         stepper(
-          'biliULN',
-          'Bilirubin ULN (mg/dL)',
-          1, 0.1, 20, true, 0.01
+          'biliULN', 'Bilirubin ULN (mg/dL)',
+          '', 0.1, 20, false, 0.01
         ),
-
         stepper(
-          'ast',
-          'AST / SGOT (U/L)',
-          30, 5, 20000
+          'ast', 'AST / SGOT (U/L)',
+          '', 5, 20000, false
         ),
-
         stepper(
-          'alt',
-          'ALT / SGPT (U/L)',
-          30, 5, 20000
+          'alt', 'ALT / SGPT (U/L)',
+          '', 5, 20000, false
         ),
-
         stepper(
-          'transULN',
-          'AST/ALT ULN (U/L)',
-          40, 5, 1000, true, 1
+          'transULN', 'AST / ALT ULN (U/L)',
+          '', 5, 1000, false, 1
         ),
-
-        choice(
-          'rising',
-          'Transaminases rising?',
-          yesno
+        field('Transaminases rising? (optional)', `
+          <select name="rising" aria-label="Transaminases rising">
+            <option value="">Not assessed</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        `),
+        stepper(
+          'creatinine', 'Serum creatinine (mg/dL), optional',
+          '', 0.1, 100, false
         )
       ].join('')
     },
@@ -1868,7 +1927,7 @@ header.app-header h1 {
   const tabNames = [
     'Patient',
     'CBC',
-    'LFT Panel',
+    'LFT / RFT',
     'Clinical'
   ];
 
@@ -2089,6 +2148,21 @@ header.app-header h1 {
     }
   });
 
+  /* CURRENT TABLET COUNTS → CANONICAL MILLIGRAMS */
+
+  function syncDoseInputs() {
+    const six = Number(form.elements.current6Tabs.value);
+    const mtx = Number(form.elements.currentMTabs.value);
+    form.elements.current6.value = Number.isFinite(six) ? six * 50 : '';
+    form.elements.currentM.value = Number.isFinite(mtx) ? mtx * 2.5 : '';
+    const label = document.getElementById('currentDoseSummary');
+    label.textContent = '6-MP: ' + form.elements.current6.value +
+      ' mg/day · MTX: ' + form.elements.currentM.value + ' mg/week';
+  }
+
+  form.elements.current6Tabs.addEventListener('input', syncDoseInputs);
+  form.elements.currentMTabs.addEventListener('input', syncDoseInputs);
+
   /* BSA CALCULATION */
 
   function updateBsa() {
@@ -2139,6 +2213,7 @@ header.app-header h1 {
     });
 
   updateBsa();
+  syncDoseInputs();
 
   /* FOUR-DIGIT CR */
 
@@ -2187,7 +2262,7 @@ header.app-header h1 {
             .some(button => button.dataset.value === value)) {
           selectChoice(choice, value);
         }
-      } else if (el.type === 'number') {
+      } else if (el.type === 'number' || el.tagName === 'SELECT') {
         el.value = value;
       }
     }
@@ -2197,6 +2272,7 @@ header.app-header h1 {
       if (el) slider.value = el.value;
     });
     updateBsa();
+    syncDoseInputs();
     crRestoreState.textContent = 'Previous saved values restored from this browser session.';
     crRestoreState.hidden = false;
   }
@@ -2357,20 +2433,19 @@ header.app-header h1 {
     return tile;
   }
 
-  function reportDrug(name, interval, oldValue, suggestedValue, percent) {
+  function reportDrug(name, interval, tablets, mg, currentMg, percent, strength) {
     const drug = element('div', 'report-drug');
     drug.appendChild(element('p', 'report-drug-name', name));
     const outcome = element('div', 'report-dose-outcome');
-    outcome.appendChild(element('strong', 'report-dose-number', suggestedValue));
-    outcome.appendChild(element('span', 'report-dose-unit', interval));
+    outcome.appendChild(element('strong', 'report-dose-number', tablets));
+    outcome.appendChild(element('span', 'report-dose-unit',
+      '× ' + strength + ' mg tablet(s) ' + interval));
     drug.appendChild(outcome);
-
-    // Keep the arithmetic traceable without repeating the input as a
-    // second prominent dose or presenting two confusing dose columns.
+    drug.appendChild(element('p', 'report-pill-equivalent',
+      'Calculated equivalent: ' + mg + (interval === 'daily' ? ' mg/day' : ' mg/week')));
     const factor = (1 + percent / 100).toFixed(2);
     drug.appendChild(element('p', 'report-formula',
-      'Calculation: ' + oldValue + ' × ' + factor + ' = ' +
-      suggestedValue + ' ' + interval));
+      currentMg + ' mg × ' + factor + ' = ' + mg + ' mg'));
     return drug;
   }
 
@@ -2408,9 +2483,9 @@ header.app-header h1 {
     // Replace internal rule-engine terminology with plain language.
     const statusText = r.hardStop ? 'Clinical review required' :
       !r.candidate ? 'Review required' :
-      percent === 0 ? 'No change calculated' :
-      percent > 0 ? percent + '% increase calculated' :
-        Math.abs(percent) + '% decrease calculated';
+      r.candidate.percentOfEntered + '% of entered dose' +
+        (percent === 0 ? ' (no change)' :
+          ' (' + (percent > 0 ? '+' : '') + percent + '% change)');
     lead.appendChild(element('div', 'report-strong', statusText));
 
     const reason = r.hardStop
@@ -2418,8 +2493,8 @@ header.app-header h1 {
       : !r.candidate
         ? 'Insufficient or discordant findings for a numerical candidate.'
         : percent === 0
-          ? 'The configured CBC range leads to a 0% adjustment.'
-          : 'A percentage adjustment was generated by the configured prototype rules.';
+          ? 'The CBC table generated a 100% dose level using the entered doses.'
+          : 'The entered doses have been scaled to the displayed CBC table level; clinical verification required.';
     lead.appendChild(element('p', 'report-status-note', reason));
     hero.appendChild(lead);
     hero.appendChild(element('span', 'report-cr', 'CR ' + input.demoId));
@@ -2433,9 +2508,9 @@ header.app-header h1 {
     const facts = element('div', 'report-grid');
     facts.appendChild(metric('BODY SURFACE AREA',
       Number.isFinite(bsa) ? bsa.toFixed(3) : '—', 'm²'));
-    facts.appendChild(metric('CBC RULE ADJUSTMENT',
+    facts.appendChild(metric('TABLE LEVEL',
       r.hardStop ? 'Blocked' :
-        r.candidate ? (percent > 0 ? '+' : '') + percent + '%' : 'Review'));
+        r.candidate ? r.candidate.percentOfEntered + '%' : 'Review'));
     output.appendChild(facts);
 
     if (r.hardStop) {
@@ -2449,19 +2524,41 @@ header.app-header h1 {
       comparison.appendChild(element('h3', 'report-section-heading',
         'Calculated dose values'));
 
-      const ruleNote = percent === 0
-        ? 'No change generated: the entered doses and calculated candidates are equal because the CBC rule applied 0%.'
-        : (percent > 0
-          ? 'The existing rule applied an illustrative +' + percent + '% adjustment.'
-          : 'The existing rule applied an illustrative ' + percent + '% adjustment.');
+      const ruleNote = r.candidate.percentOfEntered + '% of the entered dose ' +
+        '(' + (percent > 0 ? '+' : '') + percent + '% change). This is NOT a ' +
+        'prescribing instruction or a percentage of an independently verified baseline.';
       comparison.appendChild(element('p', 'report-rule-note', ruleNote));
-      comparison.appendChild(reportDrug('6-MP', 'mg/day',
-        Number(input.current6), r.candidate.mpDaily, percent));
-      comparison.appendChild(reportDrug('Methotrexate (MTX)', 'mg/week',
-        Number(input.currentM), r.candidate.mtxWeekly, percent));
+      comparison.appendChild(reportDrug('6-MP', 'daily',
+        r.candidate.mpTabletsDaily, r.candidate.mpDaily,
+        Number(input.current6), percent, 50));
+      comparison.appendChild(reportDrug('Methotrexate (MTX)', 'weekly',
+        r.candidate.mtxTabletsWeekly, r.candidate.mtxWeekly,
+        Number(input.currentM), percent, 2.5));
+      if (!Number.isInteger(r.candidate.mtxTabletsWeekly)) {
+        comparison.appendChild(element('p', 'report-rule-note',
+          'Fractional 2.5 mg MTX tablet result: no tablet rounding was applied; confirm available formulation.'));
+      }
       comparison.appendChild(element('p', 'report-disclaimer',
         'Unvalidated calculated candidates only — not a prescription or treatment order.'));
       output.appendChild(comparison);
+    }
+
+    // Show exactly which rule checks were performed.
+    if (Array.isArray(r.rules) && r.rules.length > 0) {
+      const rulesBox = element('section', 'report-rules');
+      rulesBox.appendChild(element('h3', '', 'Rules applied'));
+      rulesBox.appendChild(element('p', 'report-rules-count',
+        r.rulesChecked + ' checks reviewed · ' +
+        r.rulesAffecting + ' influencing the result'));
+      const list = element('ul', 'report-rules-list');
+      r.rules.forEach(entry => {
+        const line = element('li', entry.affected ? 'affects' : '');
+        line.appendChild(element('strong', '', entry.title));
+        line.appendChild(element('span', '', entry.detail));
+        list.appendChild(line);
+      });
+      rulesBox.appendChild(list);
+      output.appendChild(rulesBox);
     }
 
     // Show BSA maths for transparency; reference values are not candidates.
@@ -2727,6 +2824,7 @@ header.app-header h1 {
 
       applyDefaultChoices();
       updateBsa();
+      syncDoseInputs();
       crRestoreState.hidden = true;
       crRestoreState.textContent = '';
       invalidate();
